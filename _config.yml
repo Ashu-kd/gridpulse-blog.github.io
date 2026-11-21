@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------
+# GridPulse — GitHub Pages / Jekyll configuration
+# GitHub Pages builds this site automatically on every commit.
+# Articles live in _posts/ as Markdown (see PUBLISHING.md).
+# ---------------------------------------------------------------
+title: GridPulse
+tagline: Open-Source Power Systems, Protection & HVDC Lab
+description: >-
+  Technical articles on HVDC, protection and grid modelling with interactive,
+  open-source browser simulators and reproducible Python.
+author: Ashutosh Dubey
+lang: en-IN
+timezone: Asia/Kolkata
+url: https://ashu-kd.github.io
+baseurl: /gridpulse-blog.github.io   # project site → https://ashu-kd.github.io/gridpulse-blog.github.io/
+
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  hard_wrap: false
+  math_engine: mathjax      # emits \( \) and \[ \] — rendered by KaTeX in the browser
+  syntax_highlighter: rouge
+
+permalink: /articles/:year/:month/:title/
+future: false               # posts dated in the future are not published yet
+
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+feed:
+  path: feed.xml
+
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      topic: HVDC
+
+exclude:
+  - PUBLISHING.md
+  - README.md

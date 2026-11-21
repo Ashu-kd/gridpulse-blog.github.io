@@ -39,6 +39,18 @@
     };
   </script>
 
+  <meta name="description" content="GridPulse — open-source power systems, protection & HVDC engineering lab: technical articles, interactive LCC/VSC-HVDC controller simulators and reproducible Python." />
+  <meta property="og:title" content="GridPulse — Power Systems & HVDC Lab" />
+  <meta property="og:description" content="Technical HVDC & protection articles with interactive, open-source browser simulators." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="alternate" type="application/atom+xml" title="GridPulse articles" href="feed.xml" />
+
+  <!-- KaTeX (equations inside published articles) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
   <!-- Chart.js 4.4.1 UMD CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
@@ -76,6 +88,22 @@
       from { opacity: 0; transform: translateY(5px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Rendered Markdown from published articles (Jekyll -> articles.json) */
+    .gp-article h2 { font-size: 1.15rem; font-weight: 800; margin-top: 1.4rem; color: inherit; }
+    .gp-article h3 { font-size: 1rem; font-weight: 700; margin-top: 1.1rem; }
+    .gp-article p { margin: .6rem 0; }
+    .gp-article ul { list-style: disc; padding-left: 1.3rem; margin: .5rem 0; }
+    .gp-article ol { list-style: decimal; padding-left: 1.3rem; margin: .5rem 0; }
+    .gp-article a { color: #0284c7; text-decoration: underline; }
+    .gp-article blockquote { border-left: 3px solid #0ea5e9; padding-left: .9rem; color: #64748b; font-style: italic; }
+    .gp-article pre { background: #020617; color: #e2e8f0; padding: .9rem; border-radius: .75rem; overflow-x: auto; font-size: .75rem; }
+    .gp-article :not(pre) > code { background: rgba(148,163,184,.18); padding: .1rem .35rem; border-radius: .35rem; font-size: .8em; }
+    .gp-article table { width: 100%; border-collapse: collapse; font-size: .8rem; margin: .8rem 0; }
+    .gp-article th, .gp-article td { border: 1px solid rgba(148,163,184,.35); padding: .35rem .5rem; text-align: left; }
+    .gp-article img { max-width: 100%; border-radius: .75rem; }
+    .gp-article .katex-display { overflow-x: auto; overflow-y: hidden; }
+    .gp-article iframe { width: 100%; border: 0; border-radius: 1rem; }
   </style>
 </head>
 
@@ -106,6 +134,7 @@
           <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="articles">Articles</button>
           <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="tutorials">Tutorials</button>
           <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="lab">Interactive Lab</button>
+          <a href="hvdc-controls.html" class="px-3.5 py-2 rounded-lg text-sm font-semibold transition-colors text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/60 inline-flex items-center gap-1.5"><i data-lucide="cpu" class="w-3.5 h-3.5"></i>Controller Lab</a>
           <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="tools">OSS Tools</button>
           <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="contact">Contact</button>
         </nav>
@@ -155,6 +184,7 @@
       <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="articles">Articles</button>
       <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="tutorials">Tutorials</button>
       <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="lab">Interactive Lab</button>
+      <a href="hvdc-controls.html" class="block w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-semibold text-emerald-700 dark:text-emerald-400">HVDC Controller Lab</a>
       <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="tools">OSS Tools</button>
       <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="contact">Contact</button>
 
@@ -220,6 +250,11 @@
               <i data-lucide="activity" class="w-4 h-4"></i>
               Open Interactive Lab
             </button>
+            <a href="hvdc-controls.html"
+               class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 transition-all">
+              <i data-lucide="cpu" class="w-4 h-4"></i>
+              HVDC Controller Lab
+            </a>
             <button type="button" data-jump="tutorials"
                     class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm border border-white/15 backdrop-blur-sm transition-all">
               <i data-lucide="book-open" class="w-4 h-4"></i>
@@ -284,6 +319,16 @@
          VIEW 3: INTERACTIVE LAB (#view-lab)
     ================================================================= -->
     <section id="view-lab" class="view-section hidden space-y-6">
+      <a href="hvdc-controls.html" class="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl p-4 sm:p-5 bg-gradient-to-r from-emerald-600 to-grid-700 text-white shadow-lg shadow-emerald-600/20">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0"><i data-lucide="cpu" class="w-5 h-5"></i></div>
+          <div>
+            <div class="font-extrabold">New: HVDC Controller Lab</div>
+            <div class="text-xs sm:text-sm text-emerald-50/90">Time-domain pole control (CC/CEA, VDCOL, mode shift, commutation failure, DC-fault restart), Bode tuning, reactive-power &amp; filter switching, VSC dq control and an in-browser Python workbench.</div>
+          </div>
+        </div>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 text-sm font-semibold group-hover:bg-white/25 whitespace-nowrap">Open lab <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+      </a>
       <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
         <div>
           <span class="text-xs font-mono font-semibold uppercase tracking-wider text-grid-600 dark:text-grid-500">Live Browser Engineering Bench</span>
@@ -834,7 +879,7 @@
         <div class="lg:col-span-7 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-5">
           <div id="contact-success-banner" class="hidden rounded-xl p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm flex items-start gap-2.5">
             <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
-            <span>Thank you! Your feedback has been recorded and added to the recent submissions log.</span>
+            <span>Thanks! A pre-filled GitHub issue has opened in a new tab — press <b>Submit new issue</b> there to send it (a free GitHub account is needed). A copy is kept in this browser below.</span>
           </div>
 
           <form id="contact-form" class="space-y-4" novalidate>
@@ -874,6 +919,7 @@
               <i data-lucide="send" class="w-4 h-4"></i>
               Send Feedback
             </button>
+            <p class="text-[11px] text-slate-500">Feedback is posted as a <b>public</b> GitHub issue on this site's repository — your email address is not included.</p>
           </form>
         </div>
 
@@ -1670,7 +1716,7 @@ print(net.get_buses()[["v_mag", "v_angle"]].head())`
       let usingCloud = false;
 
       let adminConfig = safeGetLocal(LOCAL_ADMIN_KEY, null);
-      let publishedArticles = safeGetLocal(LOCAL_ARTICLES_KEY, []);
+      let publishedArticles = []; // filled from articles.json (generated by Jekyll from _posts/)
       let feedbackSubmissions = safeGetLocal(LOCAL_FEEDBACK_KEY, []);
       let isAuthorUnlocked = false;
       let pendingDeleteArticleId = null;
@@ -1789,7 +1835,37 @@ print(net.get_buses()[["v_mag", "v_angle"]].head())`
         }
       }
 
+      /* Repository-backed publishing: GitHub Pages (Jekyll) turns every Markdown file in
+         _posts/ into an article page and into articles.json, which this page reads. */
+      function githubRepo() {
+        const h = location.hostname;
+        if (h.endsWith('.github.io')) {
+          const owner = h.split('.')[0];
+          const first = location.pathname.split('/').filter(Boolean)[0];
+          const projectSite = first && !/\.html?$/.test(first);
+          return `${owner}/${projectSite ? first : owner + '.github.io'}`;
+        }
+        return 'Ashu-kd/gridpulse-blog.github.io';
+      }
+
+      async function loadRepoArticles() {
+        try {
+          const res = await fetch('articles.json', { cache: 'no-cache' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const items = await res.json();
+          publishedArticles = items.map(a => ({ ...a, isPublished: true }));
+          renderArticles();
+          const m = location.hash.match(/^#article=(.+)$/);
+          if (m) openArticleModal(decodeURIComponent(m[1]));
+        } catch (err) {
+          console.info('articles.json not available (expected when the file is opened locally without Jekyll).', err);
+        }
+      }
+
       async function saveFeedbackSubmission(entry) {
+        const body = `**Topic:** ${entry.topic}\n**From:** ${entry.name}\n\n${entry.message}\n\n---\n_Sent from the GridPulse contact form_`;
+        const url = `https://github.com/${githubRepo()}/issues/new?title=${encodeURIComponent('[' + entry.topic + '] feedback from ' + entry.name)}&body=${encodeURIComponent(body)}&labels=feedback`;
+        window.open(url, '_blank', 'noopener');
         if (usingCloud && currentUser && db && fb) {
           const col = fb.collection(db, 'artifacts', appId, 'public', 'data', 'feedback');
           await fb.addDoc(col, entry);
@@ -1834,6 +1910,7 @@ print(net.get_buses()[["v_mag", "v_angle"]].head())`
           return;
         }
         currentView = viewName;
+        if (viewName !== 'studio') { try { history.replaceState(null, '', '#' + viewName); } catch (e) {} }
 
         VIEWS.forEach(v => {
           const el = document.getElementById(`view-${v}`);
@@ -2010,7 +2087,23 @@ print(net.get_buses()[["v_mag", "v_angle"]].head())`
              </div>`
           : '';
 
-        document.getElementById('modal-article-body').innerHTML = `${bodyHtml}${eqHtml}${codeHtml}`;
+        const shareUrl = article.url ? new URL(article.url, location.href).href : '';
+        const actionsHtml = article.url
+          ? `<div class="flex flex-wrap gap-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+               <a href="${escapeHtml(article.url)}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-grid-600 hover:bg-grid-700 text-white"><i data-lucide="book-open" class="w-3.5 h-3.5"></i> Open full article</a>
+               <a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(shareUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-black text-white dark:bg-slate-800"><i data-lucide="share-2" class="w-3.5 h-3.5"></i> Share on X</a>
+               <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-sky-700 hover:bg-sky-800 text-white"><i data-lucide="linkedin" class="w-3.5 h-3.5"></i> LinkedIn</a>
+               <button type="button" id="modal-copy-link-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700"><i data-lucide="link" class="w-3.5 h-3.5"></i> Copy link</button>
+             </div>`
+          : '';
+        const bodyEl = document.getElementById('modal-article-body');
+        bodyEl.innerHTML = `${bodyHtml}${eqHtml}${codeHtml}${actionsHtml}`;
+        bodyEl.classList.add('gp-article');
+        const linkBtn = document.getElementById('modal-copy-link-btn');
+        if (linkBtn) linkBtn.addEventListener('click', () => copyToClipboard(shareUrl, 'Article link copied!'));
+        if (window.renderMathInElement) {
+          try { renderMathInElement(bodyEl, { delimiters: [{ left: '\\[', right: '\\]', display: true }, { left: '\\(', right: '\\)', display: false }, { left: '$$', right: '$$', display: true }], throwOnError: false }); } catch (e) {}
+        }
         const copyBtn = document.getElementById('modal-copy-code-btn');
         if (copyBtn) {
           copyBtn.addEventListener('click', () => copyToClipboard(article.code, 'Code snippet copied!'));
@@ -3012,6 +3105,9 @@ print(net.get_buses()[["v_mag", "v_angle"]].head())`
       }
 
       function openAuthorPortalModal() {
+        // Publishing now happens through the Git-backed CMS at /admin/ (commits Markdown to _posts/).
+        window.location.href = 'admin/';
+        return;
         if (isAuthorUnlocked) {
           switchView('studio');
           return;
@@ -3351,9 +3447,10 @@ print(net.get_buses()[["v_mag", "v_angle"]].head())`
       renderOssTools();
       renderSubmissions();
       renderStudioArticlesList();
-      switchView('articles');
+      const startView = location.hash.slice(1);
+      switchView(VIEWS.includes(startView) && startView !== 'studio' ? startView : 'articles');
       renderIcons();
-      initFirebaseSafely();
+      loadRepoArticles();
     };
 
     if (document.readyState === 'loading') {

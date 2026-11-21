@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HVDC Controller Lab — GridPulse</title>
+  <meta name="description" content="Interactive, open-source HVDC controller simulators: LCC pole control (CC/CEA, VDCOL, mode shift, commutation failure, DC-fault restart), current-loop Bode tuning, reactive-power & AC-filter switching, VSC dq current and DC-voltage control, plus an in-browser Python workbench." />
+  <meta property="og:title" content="HVDC Controller Lab — GridPulse" />
+  <meta property="og:description" content="Tune LCC & VSC HVDC controllers live in your browser. Open-source, reproducible, shareable scenarios." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    // apply saved theme before paint (shared with index.html)
+    try { if ((localStorage.getItem('gridpulse-theme') || 'dark') === 'dark') document.documentElement.classList.add('dark'); } catch (e) { document.documentElement.classList.add('dark'); }
+  </script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] },
+        colors: { grid: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e', 950: '#082f49' } }
+      } }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    .blueprint-bg {
+      background-image:
+        linear-gradient(to right, rgba(14,165,233,.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(14,165,233,.07) 1px, transparent 1px);
+      background-size: 26px 26px;
+    }
+    input[type="range"] { accent-color: #0ea5e9; width: 100%; }
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] > summary .chev { transform: rotate(90deg); }
+    .chev { transition: transform .15s ease; }
+    .mod { animation: fadeIn .2s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+    .theory p { margin: .55rem 0; }
+    .theory h4 { font-weight: 800; margin-top: 1rem; }
+    .theory ul { list-style: disc; padding-left: 1.25rem; }
+    .katex-display { overflow-x: auto; overflow-y: hidden; padding: .25rem 0; }
+    #py-code { tab-size: 4; }
+    .chart-box { position: relative; width: 100%; }
+    body.embed header, body.embed footer, body.embed #hero, body.embed #mod-tabs, body.embed .no-embed { display: none !important; }
+    body.embed main { padding-top: .75rem !important; }
+    .sim-svg text { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-950/90 border-b border-slate-200/80 dark:border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3">
+      <a href="index.html" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-grid-500 to-grid-700 text-white flex items-center justify-center shadow-md shadow-grid-500/25 group-hover:scale-105 transition-transform">
+          <i data-lucide="zap" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="text-base sm:text-lg font-extrabold tracking-tight leading-tight">GridPulse</div>
+          <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">HVDC Controller Lab</div>
+        </div>
+      </a>
+      <nav class="hidden md:flex items-center gap-1 text-sm font-medium">
+        <a href="index.html#articles" class="px-3.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900">Articles</a>
+        <a href="index.html#tutorials" class="px-3.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900">Tutorials</a>
+        <a href="index.html#lab" class="px-3.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900">Interactive Lab</a>
+        <span class="px-3.5 py-2 rounded-lg bg-grid-50 dark:bg-grid-950/70 text-grid-700 dark:text-sky-400">Controller Lab</span>
+        <a href="index.html#tools" class="px-3.5 py-2 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900">OSS Tools</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <a href="https://github.com/Ashu-kd" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800">
+          <i data-lucide="github" class="w-3.5 h-3.5"></i><span>@Ashu-kd</span>
+        </a>
+        <button id="theme-toggle-btn" type="button" aria-label="Toggle dark mode" class="p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800">
+          <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+          <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+
+    <!-- ==================== HERO ==================== -->
+    <section id="hero" class="relative overflow-hidden rounded-3xl bg-slate-900 text-white p-6 sm:p-8 border border-slate-800 blueprint-bg">
+      <div class="absolute -right-24 -top-24 w-80 h-80 rounded-full bg-sky-500/20 blur-3xl"></div>
+      <div class="relative max-w-3xl">
+        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-mono font-semibold bg-sky-500/15 text-sky-300 border border-sky-500/30">
+          <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Open-source · runs 100% in your browser · MIT
+        </span>
+        <h1 class="mt-3 text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">HVDC <span class="text-sky-400">Controller</span> Lab</h1>
+        <p class="mt-3 text-sm sm:text-base text-slate-300 leading-relaxed">
+          Time-domain and frequency-domain simulators for the controls that actually run an HVDC pole: rectifier current control, inverter CEA, current margin &amp; mode shift, VDCOL, commutation failure, DC-line fault restart, reactive-power/filter switching and VSC dq vector control. Every scenario can be shared as a link, exported to CSV, embedded in an article, or re-run in Python.
+        </p>
+        <div class="mt-4 flex flex-wrap gap-2 text-[11px] font-mono text-slate-400">
+          <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700">Chart.js</span>
+          <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700">KaTeX</span>
+          <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700">Pyodide (CPython + NumPy + Matplotlib in WebAssembly)</span>
+          <span class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700">Tailwind CSS</span>
+          <a class="px-2 py-1 rounded bg-slate-800/80 border border-slate-700 hover:text-sky-300" href="assets/js/hvdc-models.js" target="_blank">hvdc-models.js (source)</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== MODULE TABS ==================== -->
+    <nav id="mod-tabs" class="flex flex-wrap gap-1.5 bg-slate-200/70 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800" aria-label="Simulator modules">
+      <button type="button" class="mod-tab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold" data-mod="pole">1 · LCC Pole Control</button>
+      <button type="button" class="mod-tab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold" data-mod="tune">2 · Current-Loop Tuning</button>
+      <button type="button" class="mod-tab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold" data-mod="cf">3 · Commutation Margin</button>
+      <button type="button" class="mod-tab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold" data-mod="rpc">4 · Reactive Power &amp; Filters</button>
+      <button type="button" class="mod-tab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold" data-mod="vsc">5 · VSC dq &amp; V<sub>dc</sub> Control</button>
+      <button type="button" class="mod-tab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold" data-mod="py">6 · Python Workbench</button>
+    </nav>
+
+    <!-- ==================== MODULE 1: POLE CONTROL ==================== -->
+    <section id="mod-pole" class="mod hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <aside class="lg:col-span-4 space-y-4">
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-grid-500"></i> Pole Control Setup</h3>
+            <div class="flex gap-1" data-toolbar="pole"></div>
+          </div>
+          <div>
+            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Scenario presets</span>
+            <div class="grid grid-cols-2 gap-1.5" data-presets="pole"></div>
+          </div>
+          <div data-controls="pole" class="space-y-2"></div>
+        </div>
+      </aside>
+
+      <div class="lg:col-span-8 space-y-4">
+        <div id="pole-banner" class="hidden rounded-xl p-3.5 text-xs flex items-start gap-2.5 border"></div>
+        <div data-kpis="pole" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+
+        <!-- live block diagram -->
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <h4 class="text-sm font-bold flex items-center gap-2"><i data-lucide="workflow" class="w-4 h-4 text-grid-500"></i> Control signal flow at <span id="pole-cursor-t" class="font-mono text-grid-600 dark:text-sky-400">t = 0 ms</span></h4>
+            <span id="pole-mode-pill" class="px-2 py-0.5 rounded-md text-[11px] font-bold font-mono"></span>
+          </div>
+          <div id="pole-diagram" class="w-full overflow-x-auto"></div>
+          <div class="mt-3 flex items-center gap-3">
+            <button type="button" id="pole-play" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-grid-600 hover:bg-grid-700 text-white"><i data-lucide="play" class="w-3.5 h-3.5"></i><span>Play</span></button>
+            <input id="pole-scrub" type="range" min="0" max="1000" value="0" aria-label="Time cursor" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">DC current I<sub>d</sub> vs order</h4>
+            <div class="chart-box h-60"><canvas id="ch-pole-i"></canvas></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">Terminal DC voltages</h4>
+            <div class="chart-box h-60"><canvas id="ch-pole-v"></canvas></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">Firing α (rectifier) &amp; extinction γ (inverter)</h4>
+            <div class="chart-box h-60"><canvas id="ch-pole-a"></canvas></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">DC power &amp; AC voltage events</h4>
+            <div class="chart-box h-60"><canvas id="ch-pole-p"></canvas></div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3 text-[11px] font-mono text-slate-500" id="pole-legend"></div>
+
+        <details class="theory bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <summary class="font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="chevron-right" class="chev w-4 h-4"></i> Theory, equations &amp; model assumptions</summary>
+          <h4>Converter equations (per unit, 12-pulse pole)</h4>
+          <p>The rectifier and inverter are represented by their average DC voltages. With \(R_c = d_x V_{do}\) the equivalent commutation resistance (\(R_c = \tfrac{3}{\pi}X_c\) per 6-pulse bridge):</p>
+          \[ V_{dr} = k_r V_{do}\cos\alpha - R_{c} I_d, \qquad V_{di} = k_i V_{do}\cos\beta + R_{c} I_d = k_i V_{do}\cos\gamma - R_c I_d \]
+          \[ L\,\frac{dI_d}{dt} = V_{dr} - V_{di} - R_d I_d \]
+          <p>\(k_r, k_i\) are the AC commutation-voltage factors (1.0 = healthy; a 20 % dip gives 0.8). \(V_{do}\) is chosen so that the inverter delivers 1.0 pu at rated current with \(\gamma = \gamma_{ref}\).</p>
+          <h4>Rectifier current controller (CC)</h4>
+          \[ \alpha_{ord} = \frac{\pi}{2} - \Big[K_p\,e + \frac{K_p}{T_i}\!\int e\,dt\Big], \qquad e = I_{ord}-I_d, \qquad \alpha_{min}\le\alpha_{ord}\le\alpha_{max} \]
+          <p>Conditional integration prevents wind-up on the limits. A dead time \(T_d \approx 1/(2pf)\) (≈0.83 ms for a 12-pulse bridge at 50 Hz) represents firing-instant sampling.</p>
+          <h4>Inverter: predictive CEA + current control with margin</h4>
+          \[ \cos\beta_{ord} = \cos(\gamma_{ref} + \Delta\gamma_{CC} + \Delta\gamma_{CFP}) - \frac{2 d_x I_d}{\hat k_i} \]
+          <p>\(\Delta\gamma_{CC}\ge 0\) is the output of the inverter current controller, which acts only when \(I_d < I_{ord} - \Delta I\). If the rectifier is pushed to \(\alpha_{min}\) (weak rectifier AC voltage), current drops by the margin \(\Delta I\) and the inverter takes over current control — the classical <em>mode shift</em>. \(\hat k_i\) is the filtered inverter AC voltage; the filter lag is why sudden dips erode γ before the prediction catches up.</p>
+          <h4>VDCOL</h4>
+          \[ I_{lim}(V_d) = \begin{cases} I_{min}, & V_d \le V_{low} \\ I_{min} + (1-I_{min})\dfrac{V_d - V_{low}}{V_{high}-V_{low}}, & V_{low}<V_d<V_{high} \\ I_{max}, & V_d \ge V_{high}\end{cases} \]
+          <p>\(V_d\) is filtered with a fast time constant when falling and a slow one when rising, so the limiter grabs quickly and releases gently.</p>
+          <h4>Commutation failure &amp; DC-line faults</h4>
+          <p>Each step the actual extinction angle is \(\gamma = \arccos(\cos\beta + 2d_xI_d/k_i)\). If \(\gamma < \gamma_{min} = \omega t_q\) the outgoing valve cannot regain blocking capability: the bridge is short-circuited (\(V_{di}\approx 0\)) for about one cycle. A DC-line fault splits the line at location \(x\) through \(R_f\); after the travelling-wave protection detects it, the rectifier is force-retarded to ~140°, the arc deionises, and the pole restarts with a ramped current order. Permanent faults trigger repeated restarts and finally a pole block.</p>
+          <h4>Limits of this model</h4>
+          <ul>
+            <li>Average-value converter model — no valve switching, harmonics, or DC-line distributed capacitance/resonance.</li>
+            <li>Ideal tap changers and AC sources behind the commutation reactance; no AC-system dynamics or PLL.</li>
+            <li>Use PSCAD/EMTDC, EMTP, OpenModelica or ParaEMT for detailed EMT validation.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <!-- ==================== MODULE 2: TUNING ==================== -->
+    <section id="mod-tune" class="mod hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <aside class="lg:col-span-4 space-y-4">
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="gauge" class="w-4 h-4 text-grid-500"></i> Current-Loop Design</h3>
+            <div class="flex gap-1" data-toolbar="tune"></div>
+          </div>
+          <div class="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 space-y-2">
+            <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Auto-tune PI (loop shaping)</div>
+            <div data-controls="tune-auto" class="space-y-2"></div>
+            <div class="flex flex-wrap gap-1.5">
+              <button type="button" id="tune-auto-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-grid-600 hover:bg-grid-700 text-white"><i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Auto-tune</button>
+              <button type="button" id="tune-send-btn" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"><i data-lucide="send" class="w-3.5 h-3.5"></i> Use gains in Pole Control</button>
+            </div>
+            <p id="tune-note" class="text-[11px] text-amber-600 dark:text-amber-400 hidden"></p>
+          </div>
+          <div data-controls="tune" class="space-y-2"></div>
+        </div>
+      </aside>
+      <div class="lg:col-span-8 space-y-4">
+        <div data-kpis="tune" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+          <h4 class="text-sm font-bold mb-2">Open-loop Bode — magnitude</h4>
+          <div class="chart-box h-56"><canvas id="ch-tune-mag"></canvas></div>
+        </div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+          <h4 class="text-sm font-bold mb-2">Open-loop Bode — phase</h4>
+          <div class="chart-box h-56"><canvas id="ch-tune-ph"></canvas></div>
+        </div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+          <h4 class="text-sm font-bold mb-2">Closed-loop unit step (linearised loop incl. dead time)</h4>
+          <div class="chart-box h-56"><canvas id="ch-tune-step"></canvas></div>
+        </div>
+        <details class="theory bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <summary class="font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="chevron-right" class="chev w-4 h-4"></i> Theory: linearised current loop</summary>
+          <p>Linearising the rectifier equation around \(\alpha_0\) gives \(\Delta V_{dr} = -V_{do}\sin\alpha_0\,\Delta\alpha\). With the inverter on CEA, \(V_{di}\) falls with \(I_d\) (\(-R_c I_d\)), cancelling the rectifier's commutation resistance, so the effective loop resistance is only \(R_{eq} = R_d\). With a constant-β inverter it is \(R_d + 2R_c\).</p>
+          \[ G(s) = \frac{V_{do}\sin\alpha_0\; e^{-sT_d}}{(R_{eq} + sL)(1+sT_m)}, \qquad C(s) = K_p\Big(1 + \frac{1}{sT_i}\Big), \qquad L_o(s) = C(s)G(s) \]
+          <p>Phase margin \(PM = 180^\circ + \angle L_o(j\omega_c)\) at \(|L_o(j\omega_c)| = 1\); gain margin \(GM = -20\log_{10}|L_o(j\omega_{180})|\). The dead time contributes \(-\omega T_d\) of phase and sets the practical bandwidth ceiling.</p>
+          <h4>Auto-tune</h4>
+          <p>For a target crossover \(\omega_c\) and margin \(PM\): the PI must supply \(\varphi_{PI} = -180^\circ + PM - \angle G(j\omega_c)\). Then</p>
+          \[ T_i = \frac{1}{\omega_c\tan(-\varphi_{PI})}, \qquad K_p = \frac{1}{|G(j\omega_c)|\sqrt{1 + (\omega_c T_i)^{-2}}} \]
+          <p>Note the operating-point dependence: \(\sin\alpha_0\) is small at low α, so the plant gain (and crossover) changes with tap position and AC voltage — one reason real CC loops use gain scheduling or non-linear gain.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ==================== MODULE 3: COMMUTATION MARGIN ==================== -->
+    <section id="mod-cf" class="mod hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <aside class="lg:col-span-4 space-y-4">
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4 text-grid-500"></i> Inverter Commutation</h3>
+            <div class="flex gap-1" data-toolbar="cf"></div>
+          </div>
+          <div data-controls="cf" class="space-y-2"></div>
+        </div>
+      </aside>
+      <div class="lg:col-span-8 space-y-4">
+        <div data-kpis="cf" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">Extinction angle γ vs AC voltage dip</h4>
+            <div class="chart-box h-64"><canvas id="ch-cf-g"></canvas></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">CF immunity boundary (critical dip vs phase shift)</h4>
+            <div class="chart-box h-64"><canvas id="ch-cf-map"></canvas></div>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+          <h4 class="text-sm font-bold mb-2">Commutation voltage of the outgoing valve pair — firing (β), overlap (μ) and margin (γ)</h4>
+          <div class="chart-box h-64"><canvas id="ch-cf-wave"></canvas></div>
+        </div>
+        <details class="theory bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <summary class="font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="chevron-right" class="chev w-4 h-4"></i> Theory: why a small dip fails a commutation</summary>
+          <p>The commutation area (volt-seconds) needed to transfer \(I_d\) between valves grows with \(I_d\) and shrinks with the commutating voltage. With the firing angle β already issued, a disturbance changes γ according to</p>
+          \[ \cos\gamma = \cos(\beta_0 + \varphi) + \frac{2\,d_x\,I_d'}{k}, \qquad \cos\beta_0 = \cos\gamma_0 - 2 d_x I_{d0} \]
+          <p>where \(k = 1-\Delta U\) is the remaining voltage, \(\varphi\) the shift of the commutation-voltage zero crossing (negative = earlier, typical for single-phase faults) and \(I_d'\) the current during the first commutation (it rises because \(V_{di}\) collapses faster than the rectifier responds). Commutation fails when \(\gamma < \gamma_{min} = \omega t_q\), giving the critical dip</p>
+          \[ \Delta U_{crit} = 1 - \frac{2 d_x I_d'}{\cos\gamma_{min} - \cos(\beta_0 + \varphi)} \]
+          <p>Because \(\Delta\gamma \approx \Delta\beta\,\sin\beta/\sin\gamma\), a few degrees of phase shift remove far more than a few degrees of γ — which is why asymmetrical faults are so effective at causing CF and why CF-prevention logic reacts to zero-sequence voltage as well as to magnitude.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ==================== MODULE 4: RPC ==================== -->
+    <section id="mod-rpc" class="mod hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <aside class="lg:col-span-4 space-y-4">
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="waves" class="w-4 h-4 text-grid-500"></i> Reactive Power Control</h3>
+            <div class="flex gap-1" data-toolbar="rpc"></div>
+          </div>
+          <div>
+            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Scenario presets</span>
+            <div class="grid grid-cols-2 gap-1.5" data-presets="rpc"></div>
+          </div>
+          <div data-controls="rpc" class="space-y-2"></div>
+        </div>
+      </aside>
+      <div class="lg:col-span-8 space-y-4">
+        <div id="rpc-banner" class="hidden rounded-xl p-3.5 text-xs flex items-start gap-2.5 border"></div>
+        <div data-kpis="rpc" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+          <h4 class="text-sm font-bold mb-2">Reactive power balance during a power ramp up &amp; down</h4>
+          <div class="chart-box h-64"><canvas id="ch-rpc-q"></canvas></div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">AC bus voltage &amp; filter banks in service</h4>
+            <div class="chart-box h-60"><canvas id="ch-rpc-v"></canvas></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">Q exchange vs P (switching hysteresis)</h4>
+            <div class="chart-box h-60"><canvas id="ch-rpc-loop"></canvas></div>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+          <h4 class="text-sm font-bold mb-2 flex items-center gap-2"><i data-lucide="list" class="w-4 h-4 text-grid-500"></i> Switching sequence</h4>
+          <div id="rpc-events" class="overflow-x-auto text-xs"></div>
+        </div>
+        <details class="theory bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <summary class="font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="chevron-right" class="chev w-4 h-4"></i> Theory: converter Q, filters and switching logic</summary>
+          <p>A line-commutated converter always absorbs reactive power. With overlap μ:</p>
+          \[ \cos(\alpha+\mu) = \cos\alpha - \frac{2 d_x I_d}{U}, \qquad \frac{Q}{P} = \frac{2\mu + \sin 2\alpha - \sin 2(\alpha+\mu)}{\cos 2\alpha - \cos 2(\alpha+\mu)} \]
+          <p>(use γ in place of α for an inverter). Typically \(Q \approx 0.5\text{–}0.6\,P\) at rated load. Switched AC filter / shunt-capacitor banks supply \(Q_f = n\,Q_b\,U^2\). On a Thevenin AC system with short-circuit ratio SCR,</p>
+          \[ U \approx U_0 + \frac{Q_f - Q_{conv}}{SCR}, \qquad \Delta U_{bank} \approx \frac{Q_b}{SCR} \]
+          <h4>Reactive power controller (RPC)</h4>
+          <ul>
+            <li><b>Minimum filter</b> — banks required for harmonic performance are connected first, as a function of P (absolute/minimum filter schedule).</li>
+            <li><b>Q control</b> — keep the exchange \(Q_{ex} = Q_f - Q_{conv}\) inside \(Q_{ref} \pm B\) (operator bias = \(Q_{ref}\)). The dead-band must exceed one bank, \(2B > Q_b\), otherwise switching in one bank pushes \(Q_{ex}\) straight past the opposite limit → hunting.</li>
+            <li><b>U control / U limits</b> — voltage limits override Q control: switch in below \(U_{min}\), out above \(U_{max}\), never below the minimum-filter requirement.</li>
+            <li>A switching delay (typically 1–5 s) confirms the condition before each operation.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+
+    <!-- ==================== MODULE 5: VSC ==================== -->
+    <section id="mod-vsc" class="mod hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <aside class="lg:col-span-4 space-y-4">
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-grid-500"></i> VSC Vector Control</h3>
+            <div class="flex gap-1" data-toolbar="vsc"></div>
+          </div>
+          <div>
+            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Scenario presets</span>
+            <div class="grid grid-cols-2 gap-1.5" data-presets="vsc"></div>
+          </div>
+          <div data-controls="vsc" class="space-y-2"></div>
+        </div>
+      </aside>
+      <div class="lg:col-span-8 space-y-4">
+        <div data-kpis="vsc" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+          <h4 class="text-sm font-bold mb-2">dq currents vs references</h4>
+          <div class="chart-box h-64"><canvas id="ch-vsc-i"></canvas></div>
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">DC-link voltage</h4>
+            <div class="chart-box h-60"><canvas id="ch-vsc-vdc"></canvas></div>
+          </div>
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">Converter voltage magnitude vs modulation limit</h4>
+            <div class="chart-box h-60"><canvas id="ch-vsc-vc"></canvas></div>
+          </div>
+        </div>
+        <details class="theory bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+          <summary class="font-bold text-slate-900 dark:text-white flex items-center gap-2"><i data-lucide="chevron-right" class="chev w-4 h-4"></i> Theory: dq current loop and DC-voltage loop</summary>
+          <p>In a frame aligned with the grid voltage (ideal PLL) the phase-reactor/transformer dynamics are</p>
+          \[ \frac{X}{\omega_b}\frac{di_d}{dt} = v_{cd} - v_{gd} - R i_d + X i_q, \qquad \frac{X}{\omega_b}\frac{di_q}{dt} = v_{cq} - v_{gq} - R i_q - X i_d \]
+          <p>The controller cancels the cross-coupling terms \(\pm X i\) (decoupling) and feeds forward \(v_g\). With internal-model-control tuning the closed current loop becomes first order with bandwidth \(\alpha_c\):</p>
+          \[ K_p = \alpha_c \frac{X}{\omega_b}, \qquad K_i = \alpha_c R, \qquad \frac{i}{i^*} \approx \frac{1}{1 + s/\alpha_c} \]
+          <p>The converter dead time (PWM + computation, ≈1.5 sampling periods) limits \(\alpha_c\). The DC-voltage station regulates the energy stored in the DC capacitance (energy constant H):</p>
+          \[ 2H\,V_{dc}\frac{dV_{dc}}{dt} = P_{dc,in} - P_{ac}, \qquad K_{pv} = 4H\zeta\omega_v, \quad K_{iv} = 2H\omega_v^2 \]
+          <p>Feeding forward the measured DC power drastically reduces the voltage excursion after a power step from the remote station.</p>
+        </details>
+      </div>
+    </section>
+
+    <!-- ==================== MODULE 6: PYTHON ==================== -->
+    <section id="mod-py" class="mod hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div class="lg:col-span-7 space-y-3">
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="font-bold text-base flex items-center gap-2"><i data-lucide="terminal" class="w-4 h-4 text-grid-500"></i> Python in the browser (Pyodide)</h3>
+            <div class="flex flex-wrap gap-1.5">
+              <select id="py-preset" class="text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-2 py-1.5"></select>
+              <button type="button" id="py-inject" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" title="Insert the current Pole Control parameters as a Python dict"><i data-lucide="file-input" class="w-3.5 h-3.5"></i> Insert lab params</button>
+              <button type="button" id="py-run" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-grid-600 hover:bg-grid-700 text-white"><i data-lucide="play" class="w-3.5 h-3.5"></i> Run</button>
+            </div>
+          </div>
+          <textarea id="py-code" spellcheck="false" class="w-full h-[460px] font-mono text-xs leading-relaxed rounded-xl bg-slate-950 text-slate-100 border border-slate-800 p-3 focus:outline-none focus:ring-2 focus:ring-grid-500"></textarea>
+          <p class="text-[11px] text-slate-500">First run downloads the Pyodide runtime with NumPy &amp; Matplotlib (~15 MB, cached by your browser afterwards). Code runs locally — nothing is sent to a server. <kbd class="px-1 rounded bg-slate-200 dark:bg-slate-800">Ctrl</kbd>+<kbd class="px-1 rounded bg-slate-200 dark:bg-slate-800">Enter</kbd> runs.</p>
+        </div>
+      </div>
+      <div class="lg:col-span-5 space-y-3">
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="text-sm font-bold">Output</h4>
+            <span id="py-status" class="text-[11px] font-mono text-slate-500">idle</span>
+          </div>
+          <pre id="py-out" class="h-56 overflow-auto rounded-xl bg-slate-950 text-emerald-300 text-xs font-mono p-3 whitespace-pre-wrap"></pre>
+        </div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+          <h4 class="text-sm font-bold mb-2">Figure</h4>
+          <div id="py-fig" class="min-h-[200px] flex items-center justify-center text-xs text-slate-400 rounded-xl bg-slate-50 dark:bg-slate-950 border border-dashed border-slate-300 dark:border-slate-700">Matplotlib figures appear here</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm text-xs text-slate-600 dark:text-slate-400 space-y-1.5">
+          <div class="font-bold text-slate-800 dark:text-slate-200 text-sm">Take it further with desktop open-source tools</div>
+          <p>Copy the script into Jupyter and extend with <b>pandapower</b> / <b>PyPSA</b> (AC/DC load flow), <b>PyPowSyBl</b> (HVDC line models, security analysis), <b>OpenModelica + OpenIPSL</b> (phasor dynamics), or <b>ParaEMT / Dynawo</b> (EMT &amp; hybrid simulation).</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- embed footer link -->
+    <div id="embed-link" class="hidden text-right text-[11px] font-mono">
+      <a href="#" target="_blank" class="text-grid-600 dark:text-sky-400 hover:underline">Open in the full HVDC Controller Lab ↗</a>
+    </div>
+  </main>
+
+  <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 py-6 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+      <span>GridPulse — HVDC Controller Lab · educational average-value models · MIT licence</span>
+      <span>Built by <a href="https://github.com/Ashu-kd" class="text-grid-600 dark:text-sky-400 hover:underline" target="_blank" rel="noopener noreferrer">@Ashu-kd</a> · <a href="index.html#articles" class="hover:underline">Articles</a> · <a href="feed.xml" class="hover:underline">RSS</a></span>
+    </div>
+  </footer>
+
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold shadow-xl border border-slate-700"></div>
+
+  <script src="assets/js/hvdc-models.js"></script>
+  <script src="assets/js/hvdc-lab.js"></script>
+</body>
+</html>

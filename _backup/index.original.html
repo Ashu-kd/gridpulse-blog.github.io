@@ -1,0 +1,3366 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GridPulse — Open-Source Power Systems, Protection &amp; HVDC Lab</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS v3 CDN -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+          colors: {
+            grid: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              200: '#bae6fd',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+              800: '#075985',
+              900: '#0c4a6e',
+              950: '#082f49',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Chart.js 4.4.1 UMD CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons 0.460.0 UMD CDN -->
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    .code-scroll::-webkit-scrollbar { height: 6px; width: 6px; }
+    .code-scroll::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.35); border-radius: 9999px; }
+    .code-scroll::-webkit-scrollbar-thumb { background: rgba(14, 165, 233, 0.45); border-radius: 9999px; }
+    .code-scroll::-webkit-scrollbar-thumb:hover { background: rgba(14, 165, 233, 0.75); }
+
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .blueprint-bg {
+      background-image:
+        linear-gradient(to right, rgba(14, 165, 233, 0.07) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(14, 165, 233, 0.07) 1px, transparent 1px);
+      background-size: 26px 26px;
+    }
+
+    input[type="range"] {
+      accent-color: #0ea5e9;
+    }
+
+    .view-section {
+      animation: fadeInView 0.2s ease-out;
+    }
+    @keyframes fadeInView {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col selection:bg-grid-500/20 selection:text-grid-700 dark:selection:text-grid-100">
+
+  <!-- ==================== STICKY HEADER ==================== -->
+  <header class="sticky top-0 z-40 w-full backdrop-blur-md bg-white/90 dark:bg-slate-950/90 border-b border-slate-200/80 dark:border-slate-800/80">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+
+        <!-- Brand -->
+        <button id="brand-home-btn" type="button" class="flex items-center gap-3 group focus:outline-none text-left">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-grid-500 to-grid-700 text-white flex items-center justify-center shadow-md shadow-grid-500/25 group-hover:scale-105 transition-transform">
+            <i data-lucide="zap" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <div class="text-base sm:text-lg font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+              GridPulse
+            </div>
+            <div class="text-[11px] font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">
+              Power Systems &amp; HVDC Lab
+            </div>
+          </div>
+        </button>
+
+        <!-- Desktop Navigation (Strictly Public) -->
+        <nav class="hidden md:flex items-center gap-1" aria-label="Primary Navigation">
+          <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="articles">Articles</button>
+          <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="tutorials">Tutorials</button>
+          <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="lab">Interactive Lab</button>
+          <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="tools">OSS Tools</button>
+          <button type="button" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-medium transition-colors" data-view="contact">Contact</button>
+        </nav>
+
+        <!-- Right Controls -->
+        <div class="flex items-center gap-2">
+          <!-- Admin-Only Controls (Hidden from Public Visitors until Unlocked) -->
+          <div id="header-author-controls" class="hidden items-center gap-1.5 mr-1">
+            <span class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Author Mode
+            </span>
+            <button id="header-studio-btn" type="button"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors">
+              <i data-lucide="pen-tool" class="w-3.5 h-3.5"></i>
+              <span class="hidden sm:inline">Author Studio</span>
+            </button>
+            <button id="header-lock-btn" type="button" title="Lock &amp; Exit Author Mode"
+                    class="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-rose-100 dark:bg-slate-900 dark:hover:bg-rose-950/70 text-slate-600 hover:text-rose-600 dark:text-slate-300 dark:hover:text-rose-400 border border-slate-200 dark:border-slate-800 transition-colors">
+              <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              <span class="hidden xl:inline">Lock</span>
+            </button>
+          </div>
+
+          <a href="https://github.com/Ashu-kd" target="_blank" rel="noopener noreferrer"
+             class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 transition-colors">
+            <i data-lucide="github" class="w-3.5 h-3.5"></i>
+            <span>@Ashu-kd</span>
+          </a>
+
+          <button id="theme-toggle-btn" type="button" aria-label="Toggle dark mode"
+                  class="p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 transition-colors">
+            <i data-lucide="moon" class="w-4 h-4 block dark:hidden"></i>
+            <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+          </button>
+
+          <button id="mobile-menu-btn" type="button" aria-label="Open navigation menu" aria-expanded="false"
+                  class="md:hidden p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 transition-colors">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Menu -->
+    <div id="mobile-menu" class="hidden md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 pt-3 pb-4 space-y-1.5 shadow-lg">
+      <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="articles">Articles</button>
+      <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="tutorials">Tutorials</button>
+      <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="lab">Interactive Lab</button>
+      <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="tools">OSS Tools</button>
+      <button type="button" class="mobile-nav-btn w-full text-left px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors" data-view="contact">Contact</button>
+
+      <div id="mobile-author-controls" class="hidden pt-2 border-t border-emerald-200 dark:border-emerald-900/60 space-y-1.5">
+        <button id="mobile-studio-btn" type="button"
+                class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-semibold bg-emerald-50 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-300">
+          <span class="flex items-center gap-2"><i data-lucide="pen-tool" class="w-4 h-4"></i> Author Studio</span>
+          <span class="text-[10px] font-mono uppercase">Admin</span>
+        </button>
+        <button id="mobile-lock-btn" type="button"
+                class="w-full flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i> Lock / Sign Out
+        </button>
+      </div>
+
+      <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+        <a href="https://github.com/Ashu-kd" target="_blank" rel="noopener noreferrer"
+           class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900">
+          <i data-lucide="github" class="w-4 h-4"></i>
+          <span>GitHub: @Ashu-kd</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ================================================================
+         VIEW 1: ARTICLES (#view-articles)
+    ================================================================= -->
+    <section id="view-articles" class="view-section space-y-8">
+      <!-- Hero Banner -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-grid-950 to-slate-900 text-white border border-slate-800 shadow-xl">
+        <svg class="absolute inset-0 w-full h-full opacity-25 pointer-events-none" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <pattern id="hero-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#0ea5e9" stroke-width="0.6" stroke-opacity="0.35" />
+            </pattern>
+          </defs>
+          <rect width="1200" height="400" fill="url(#hero-grid)" />
+          <path d="M 0 200 Q 75 90, 150 200 T 300 200 T 450 200 T 600 200 T 750 200 T 900 200 T 1050 200 T 1200 200" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-opacity="0.7" />
+          <polyline points="730,100 945,126 945,285 825,340" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-opacity="0.85" />
+          <polyline points="785,340 890,285 890,150 1110,136" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="5 5" stroke-opacity="0.85" />
+          <circle cx="945" cy="146" r="7" fill="#10b981" />
+          <circle cx="945" cy="146" r="16" fill="none" stroke="#10b981" stroke-width="1.4" stroke-opacity="0.6" />
+        </svg>
+
+        <div class="relative z-10 px-6 py-10 sm:px-10 sm:py-14 max-w-3xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-grid-500/15 border border-grid-500/30 text-grid-100 text-xs font-mono mb-4">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            LCC-HVDC &bull; VSC-HVDC &bull; IEC 60255 &bull; Mho Distance &bull; Open-Source EMT
+          </div>
+          <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
+            Open-Source <span class="text-sky-400">Power Systems</span>, Protection &amp; HVDC Engineering Lab
+          </h1>
+          <p class="mt-4 text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
+            Technical engineering articles, reproducible Python/Julia workflows, and real-time browser simulators for LCC-HVDC V<sub>d</sub>–I<sub>d</sub> characteristics, IDMT overcurrent coordination, VSC-HVDC P-Q dynamics, and 3-zone Mho distance relaying.
+          </p>
+          <div class="mt-7 flex flex-wrap items-center gap-3">
+            <button type="button" data-jump="lab" data-jump-lab="lcc"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-grid-500 hover:bg-grid-600 text-white font-semibold text-sm shadow-lg shadow-grid-500/25 transition-all">
+              <i data-lucide="activity" class="w-4 h-4"></i>
+              Open Interactive Lab
+            </button>
+            <button type="button" data-jump="tutorials"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold text-sm border border-white/15 backdrop-blur-sm transition-all">
+              <i data-lucide="book-open" class="w-4 h-4"></i>
+              Explore Tutorials
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Category Filter Bar -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900/70 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="relative flex-1 max-w-md">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input id="article-search-input" type="text" placeholder="Search articles, standards, equations (LCC, VDCOL, IDMT, Mho, PyPowSyBl)..."
+                 class="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-grid-500" />
+        </div>
+        <div id="article-category-pills" class="flex flex-wrap items-center gap-2"></div>
+      </div>
+
+      <!-- Articles Grid -->
+      <div id="articles-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- ================================================================
+         VIEW 2: TUTORIALS & TRACKS (#view-tutorials)
+    ================================================================= -->
+    <section id="view-tutorials" class="view-section hidden space-y-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <span class="text-xs font-mono font-semibold uppercase tracking-wider text-grid-600 dark:text-grid-500">Structured Engineering Curriculum</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">Tutorials &amp; Learning Tracks</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
+            Work through four practical engineering tracks with interactive checklists saved in your browser and one-click jumps directly into the matching simulator.
+          </p>
+        </div>
+        <button id="reset-tutorial-progress-btn" type="button"
+                class="self-start md:self-auto inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 transition-colors">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          Reset Progress
+        </button>
+      </div>
+
+      <!-- Overall Progress Bar -->
+      <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+        <div>
+          <div class="text-xs font-mono uppercase tracking-wider text-slate-500">Overall Curriculum Progress</div>
+          <div id="overall-tutorial-summary" class="text-sm font-bold mt-0.5">0 of 16 modules completed (0%)</div>
+        </div>
+        <div class="sm:w-80 w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          <div id="overall-tutorial-bar" class="h-full rounded-full bg-gradient-to-r from-grid-500 to-emerald-500 transition-all duration-300" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Track Filter Tabs -->
+      <div id="tutorial-track-tabs" class="flex flex-wrap items-center gap-2"></div>
+
+      <!-- Tracks Grid -->
+      <div id="tutorials-container" class="grid grid-cols-1 lg:grid-cols-2 gap-6"></div>
+    </section>
+
+    <!-- ================================================================
+         VIEW 3: INTERACTIVE LAB (#view-lab)
+    ================================================================= -->
+    <section id="view-lab" class="view-section hidden space-y-6">
+      <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
+        <div>
+          <span class="text-xs font-mono font-semibold uppercase tracking-wider text-grid-600 dark:text-grid-500">Live Browser Engineering Bench</span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">Interactive Protection &amp; HVDC Lab</h2>
+          <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">
+            Four real-time Chart.js engineering simulators. Adjust converter parameters, relay settings, or fault conditions to observe live operating points.
+          </p>
+        </div>
+
+        <!-- 4 Simulator Sub-Tabs -->
+        <div class="flex flex-wrap gap-1.5 bg-slate-200/70 dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
+          <button type="button" class="lab-subtab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all" data-lab="lcc">1. LCC-HVDC (V<sub>d</sub>–I<sub>d</sub>)</button>
+          <button type="button" class="lab-subtab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all" data-lab="idmt">2. IDMT Relay TCC</button>
+          <button type="button" class="lab-subtab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all" data-lab="hvdc">3. VSC-HVDC P-Q &amp; DC</button>
+          <button type="button" class="lab-subtab px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all" data-lab="mho">4. Mho Distance (R-X)</button>
+        </div>
+      </div>
+
+      <!-- ==================== LAB 1: LCC-HVDC Vd-Id ==================== -->
+      <div id="lab-panel-lcc" class="lab-panel grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i data-lucide="git-commit-horizontal" class="w-4 h-4 text-grid-500"></i>
+              LCC-HVDC Parameters
+            </h3>
+            <button type="button" id="lcc-reset-btn" class="text-xs font-mono text-grid-600 dark:text-sky-400 hover:underline">Reset</button>
+          </div>
+
+          <div class="space-y-1.5">
+            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Scenario Presets</span>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <button type="button" class="lcc-preset text-left px-2.5 py-2 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-grid-100 dark:bg-slate-800 dark:hover:bg-grid-950 border border-slate-200 dark:border-slate-700 transition-colors" data-preset="normal">Normal Rated Power</button>
+              <button type="button" class="lcc-preset text-left px-2.5 py-2 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-grid-100 dark:bg-slate-800 dark:hover:bg-grid-950 border border-slate-200 dark:border-slate-700 transition-colors" data-preset="inv-dip">Inverter AC Dip (0.75 pu)</button>
+              <button type="button" class="lcc-preset text-left px-2.5 py-2 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-grid-100 dark:bg-slate-800 dark:hover:bg-grid-950 border border-slate-200 dark:border-slate-700 transition-colors" data-preset="rect-dip">Rectifier AC Dip (0.80 pu)</button>
+              <button type="button" class="lcc-preset text-left px-2.5 py-2 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-grid-100 dark:bg-slate-800 dark:hover:bg-grid-950 border border-slate-200 dark:border-slate-700 transition-colors" data-preset="severe-vdcol">Severe Inverter Fault (VDCOL)</button>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-0.5">
+                <span>Rectifier AC Voltage (E<sub>ar</sub>)</span>
+                <span id="lcc-ear-val" class="font-mono text-grid-600 dark:text-sky-400 font-semibold">1.00 pu</span>
+              </div>
+              <input id="lcc-ear" type="range" min="0.40" max="1.15" step="0.01" value="1.00" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-0.5">
+                <span>Inverter AC Voltage (E<sub>ai</sub>)</span>
+                <span id="lcc-eai-val" class="font-mono text-amber-500 font-semibold">1.00 pu</span>
+              </div>
+              <input id="lcc-eai" type="range" min="0.40" max="1.15" step="0.01" value="1.00" class="w-full" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>α<sub>min</sub></span>
+                  <span id="lcc-amin-val" class="font-mono text-grid-600 dark:text-sky-400 font-semibold">5°</span>
+                </div>
+                <input id="lcc-amin" type="range" min="5" max="15" step="1" value="5" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>γ<sub>min</sub></span>
+                  <span id="lcc-gmin-val" class="font-mono text-amber-500 font-semibold">18°</span>
+                </div>
+                <input id="lcc-gmin" type="range" min="15" max="22" step="1" value="18" class="w-full" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>Current Order I<sub>ord</sub></span>
+                  <span id="lcc-iord-val" class="font-mono text-emerald-500 font-semibold">1.00 pu</span>
+                </div>
+                <input id="lcc-iord" type="range" min="0.20" max="1.20" step="0.02" value="1.00" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>Margin ΔI<sub>d</sub></span>
+                  <span id="lcc-did-val" class="font-mono text-indigo-500 font-semibold">0.10 pu</span>
+                </div>
+                <input id="lcc-did" type="range" min="0.05" max="0.20" step="0.01" value="0.10" class="w-full" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>X<sub>cr</sub> / X<sub>ci</sub></span>
+                  <span id="lcc-xc-val" class="font-mono text-slate-600 dark:text-slate-300 font-semibold">0.14 pu</span>
+                </div>
+                <input id="lcc-xc" type="range" min="0.08" max="0.22" step="0.01" value="0.14" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>DC Line R<sub>d</sub></span>
+                  <span id="lcc-rd-val" class="font-mono text-slate-600 dark:text-slate-300 font-semibold">0.03 pu</span>
+                </div>
+                <input id="lcc-rd" type="range" min="0.01" max="0.08" step="0.01" value="0.03" class="w-full" />
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-200 dark:border-slate-800">
+            <label class="flex items-start gap-3 cursor-pointer p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
+              <input id="lcc-vdcol-toggle" type="checkbox" checked class="mt-0.5 w-4 h-4 rounded text-grid-600 focus:ring-grid-500 cursor-pointer" />
+              <div>
+                <div class="text-xs font-bold text-slate-800 dark:text-slate-200">Enable VDCOL Protection</div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
+                  Linearly ramps I<sub>ord</sub> from V<sub>d,high</sub>=0.80 pu down to V<sub>d,low</sub>=0.30 pu (I<sub>d,min</sub>=0.30 pu).
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="lg:col-span-8 space-y-4">
+          <div id="lcc-warning-banner" class="hidden rounded-xl p-3.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs flex items-start gap-2.5">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500 shrink-0 mt-0.5"></i>
+            <div id="lcc-warning-text"></div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Operating V<sub>d</sub></div>
+              <div id="lcc-vd-out" class="text-lg sm:text-xl font-mono font-bold text-grid-600 dark:text-sky-400 mt-0.5">-- pu</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Operating I<sub>d</sub></div>
+              <div id="lcc-id-out" class="text-lg sm:text-xl font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">-- pu</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">DC Power P<sub>d</sub></div>
+              <div id="lcc-pd-out" class="text-lg sm:text-xl font-mono font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">-- pu</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 flex flex-col justify-between">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Control Mode</div>
+              <div id="lcc-mode-badge" class="mt-1 inline-flex items-center justify-center px-2 py-1 rounded-lg text-[11px] font-bold text-center leading-tight">--</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 flex items-center justify-between">
+              <span class="text-xs text-slate-500">Rectifier α</span>
+              <span id="lcc-alpha-out" class="font-mono text-sm font-bold">--°</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 flex items-center justify-between">
+              <span class="text-xs text-slate-500">Inverter γ</span>
+              <span id="lcc-gamma-out" class="font-mono text-sm font-bold">--°</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 flex items-center justify-between">
+              <span class="text-xs text-slate-500">Overlap μ<sub>r</sub>/μ<sub>i</sub></span>
+              <span id="lcc-mu-out" class="font-mono text-xs font-bold">--° / --°</span>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 flex items-center justify-between">
+              <span class="text-xs text-slate-500">Q<sub>r</sub> / Q<sub>i</sub></span>
+              <span id="lcc-q-out" class="font-mono text-xs font-bold">-- / -- pu</span>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 blueprint-bg shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h4 class="text-sm font-bold">LCC-HVDC Static V<sub>d</sub>–I<sub>d</sub> Characteristics (Rectifier Terminal Reference)</h4>
+              <span class="text-[11px] font-mono text-slate-500">V<sub>dr</sub> = V<sub>do,r</sub>cosα − R<sub>cr</sub>I<sub>d</sub> &nbsp;|&nbsp; V<sub>di,ref</sub> = V<sub>do,i</sub>cosγ + (R<sub>d</sub> − R<sub>ci</sub>)I<sub>d</sub></span>
+            </div>
+            <div class="relative h-80 sm:h-96 w-full">
+              <canvas id="chart-lcc"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== LAB 2: IDMT OVERCURRENT TCC ==================== -->
+      <div id="lab-panel-idmt" class="lab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-grid-500"></i>
+              IEC 60255-151 Parameters
+            </h3>
+            <button type="button" id="idmt-reset-btn" class="text-xs font-mono text-grid-600 dark:text-sky-400 hover:underline">Reset</button>
+          </div>
+
+          <div>
+            <label for="idmt-curve-select" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">IEC Curve Type</label>
+            <select id="idmt-curve-select" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-grid-500">
+              <option value="SI">Standard Inverse (k=0.14, α=0.02)</option>
+              <option value="VI">Very Inverse (k=13.5, α=1.0)</option>
+              <option value="EI">Extremely Inverse (k=80.0, α=2.0)</option>
+              <option value="LTI">Long-Time Inverse (k=120.0, α=1.0)</option>
+            </select>
+          </div>
+
+          <div class="space-y-3.5">
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>Pickup Current (I<sub>p</sub>)</span>
+                <span id="idmt-ip-val" class="font-mono text-grid-600 dark:text-sky-400 font-semibold">200 A</span>
+              </div>
+              <input id="idmt-ip" type="range" min="50" max="800" step="10" value="200" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>Relay 1 (Downstream) TMS</span>
+                <span id="idmt-tms1-val" class="font-mono text-grid-600 dark:text-sky-400 font-semibold">0.20</span>
+              </div>
+              <input id="idmt-tms1" type="range" min="0.05" max="1.20" step="0.05" value="0.20" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>Relay 2 (Upstream) TMS</span>
+                <span id="idmt-tms2-val" class="font-mono text-amber-500 font-semibold">0.45</span>
+              </div>
+              <input id="idmt-tms2" type="range" min="0.10" max="1.50" step="0.05" value="0.45" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>Instantaneous Stage I&gt;&gt; (50)</span>
+                <span id="idmt-inst-val" class="font-mono text-indigo-500 font-semibold">6000 A</span>
+              </div>
+              <input id="idmt-inst" type="range" min="1500" max="12000" step="250" value="6000" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>Test Fault Current (I<sub>f</sub>)</span>
+                <span id="idmt-if-val" class="font-mono text-rose-500 font-semibold">2400 A</span>
+              </div>
+              <input id="idmt-if" type="range" min="300" max="10000" step="100" value="2400" class="w-full" />
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Quick Presets</span>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="idmt-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="feeder">Feeder SI</button>
+              <button type="button" class="idmt-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="transformer">Transformer VI</button>
+              <button type="button" class="idmt-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="miscoord">Mis-Coordinated</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-8 space-y-5">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Relay 1 Trip (t₁)</div>
+              <div id="idmt-t1-out" class="text-lg sm:text-xl font-mono font-bold text-grid-600 dark:text-sky-400 mt-0.5">-- s</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Relay 2 Trip (t₂)</div>
+              <div id="idmt-t2-out" class="text-lg sm:text-xl font-mono font-bold text-amber-500 mt-0.5">-- s</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">CTI Margin (Δt)</div>
+              <div id="idmt-dt-out" class="text-lg sm:text-xl font-mono font-bold mt-0.5">-- s</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 flex flex-col justify-between">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Grading ≥ 0.30s</div>
+              <div id="idmt-status-badge" class="mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold">--</div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 blueprint-bg shadow-sm">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+              <h4 class="text-sm font-bold">Log-Log Time-Current Characteristic (TCC)</h4>
+              <span class="text-xs font-mono text-slate-500">t = TMS · k / ((I / I<sub>p</sub>)<sup>α</sup> − 1)</span>
+            </div>
+            <div class="relative h-72 sm:h-80 w-full">
+              <canvas id="chart-idmt"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== LAB 3: VSC-HVDC P-Q & DC-LINK ==================== -->
+      <div id="lab-panel-hvdc" class="lab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-4 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i data-lucide="cpu" class="w-4 h-4 text-grid-500"></i>
+              VSC-HVDC Setpoints
+            </h3>
+            <button type="button" id="hvdc-reset-btn" class="text-xs font-mono text-grid-600 dark:text-sky-400 hover:underline">Reset</button>
+          </div>
+
+          <div class="space-y-3.5">
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>Active Power P* (p.u.)</span>
+                <span id="hvdc-p-val" class="font-mono text-grid-600 dark:text-sky-400 font-semibold">0.75 pu</span>
+              </div>
+              <input id="hvdc-p" type="range" min="-1.10" max="1.10" step="0.02" value="0.75" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>Reactive Power Q* (p.u.)</span>
+                <span id="hvdc-q-val" class="font-mono text-indigo-500 font-semibold">0.30 pu</span>
+              </div>
+              <input id="hvdc-q" type="range" min="-0.85" max="0.85" step="0.02" value="0.30" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>AC Bus Voltage V<sub>ac</sub> (p.u.)</span>
+                <span id="hvdc-vac-val" class="font-mono text-emerald-500 font-semibold">1.00 pu</span>
+              </div>
+              <input id="hvdc-vac" type="range" min="0.80" max="1.15" step="0.01" value="1.00" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>DC-Link Capacitance C<sub>dc</sub> (mF)</span>
+                <span id="hvdc-cdc-val" class="font-mono text-amber-500 font-semibold">2.4 mF</span>
+              </div>
+              <input id="hvdc-cdc" type="range" min="0.8" max="6.0" step="0.2" value="2.4" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-1">
+                <span>DC Controller Damping (ζ)</span>
+                <span id="hvdc-zeta-val" class="font-mono text-slate-600 dark:text-slate-300 font-semibold">0.55</span>
+              </div>
+              <input id="hvdc-zeta" type="range" min="0.20" max="1.10" step="0.05" value="0.55" class="w-full" />
+            </div>
+          </div>
+
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-slate-500">Current Limit S<sub>max</sub>:</span>
+              <span id="hvdc-smax-out" class="font-mono font-bold">1.00 pu</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Apparent Power |S|:</span>
+              <span id="hvdc-s-out" class="font-mono font-bold">-- pu</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">Power Factor (cos φ):</span>
+              <span id="hvdc-pf-out" class="font-mono font-bold">--</span>
+            </div>
+            <div class="flex justify-between items-center pt-1 border-t border-slate-200 dark:border-slate-800">
+              <span class="text-slate-500">Feasibility:</span>
+              <span id="hvdc-status-badge" class="px-2 py-0.5 rounded-md font-bold">--</span>
+            </div>
+          </div>
+
+          <div class="pt-1 border-t border-slate-200 dark:border-slate-800">
+            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Presets</span>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="hvdc-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="wind">Offshore Wind</button>
+              <button type="button" class="hvdc-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="lowcap">Low C<sub>dc</sub></button>
+              <button type="button" class="hvdc-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="acdip">AC Sag (0.85 pu)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">P-Q Capability Plane (p.u.)</h4>
+            <div class="relative h-72 w-full">
+              <canvas id="chart-hvdc-pq"></canvas>
+            </div>
+          </div>
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 blueprint-bg shadow-sm">
+            <h4 class="text-sm font-bold mb-2">DC-Link Voltage V<sub>dc</sub>(t) Step Response</h4>
+            <div class="relative h-72 w-full">
+              <canvas id="chart-hvdc-dc"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== LAB 4: 3-ZONE MHO DISTANCE RELAY ==================== -->
+      <div id="lab-panel-mho" class="lab-panel hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-4 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3.5 shadow-sm">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i data-lucide="compass" class="w-4 h-4 text-grid-500"></i>
+              21 Distance Relay (Mho Z1–Z3)
+            </h3>
+            <button type="button" id="mho-reset-btn" class="text-xs font-mono text-grid-600 dark:text-sky-400 hover:underline">Reset</button>
+          </div>
+
+          <div class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>|Z<sub>L</sub>|</span>
+                  <span id="mho-zl-val" class="font-mono text-grid-600 dark:text-sky-400 font-semibold">20.0 Ω</span>
+                </div>
+                <input id="mho-zl" type="range" min="8" max="40" step="1" value="20" class="w-full" />
+              </div>
+              <div>
+                <div class="flex justify-between text-xs font-medium mb-0.5">
+                  <span>θ<sub>L</sub></span>
+                  <span id="mho-angle-val" class="font-mono text-grid-600 dark:text-sky-400 font-semibold">75°</span>
+                </div>
+                <input id="mho-angle" type="range" min="55" max="88" step="1" value="75" class="w-full" />
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-0.5">
+                <span>Zone 1 Reach (%)</span>
+                <span id="mho-z1-val" class="font-mono text-emerald-500 font-semibold">80%</span>
+              </div>
+              <input id="mho-z1" type="range" min="50" max="95" step="5" value="80" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-0.5">
+                <span>Zone 2 Reach (%)</span>
+                <span id="mho-z2-val" class="font-mono text-amber-500 font-semibold">120%</span>
+              </div>
+              <input id="mho-z2" type="range" min="100" max="160" step="5" value="120" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-0.5">
+                <span>Zone 3 Reach (%)</span>
+                <span id="mho-z3-val" class="font-mono text-indigo-500 font-semibold">220%</span>
+              </div>
+              <input id="mho-z3" type="range" min="160" max="260" step="10" value="220" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-0.5">
+                <span>Fault Location (% of Line)</span>
+                <span id="mho-loc-val" class="font-mono text-slate-600 dark:text-slate-300 font-semibold">60%</span>
+              </div>
+              <input id="mho-loc" type="range" min="10" max="240" step="5" value="60" class="w-full" />
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-medium mb-0.5">
+                <span>Fault Arc Resistance (R<sub>f</sub>)</span>
+                <span id="mho-rf-val" class="font-mono text-rose-500 font-semibold">2.5 Ω</span>
+              </div>
+              <input id="mho-rf" type="range" min="0" max="25" step="0.5" value="2.5" class="w-full" />
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-200 dark:border-slate-800">
+            <span class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Fault Scenarios</span>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="mho-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="bolted">Bolted Z1</button>
+              <button type="button" class="mho-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="arc">High-R<sub>f</sub> Arc</button>
+              <button type="button" class="mho-preset px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors" data-preset="remote">Zone 3 Backup</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-8 space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Apparent |Z<sub>app</sub>|</div>
+              <div id="mho-zf-out" class="text-base sm:text-lg font-mono font-bold mt-0.5">-- Ω</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Apparent Angle ∠Z<sub>app</sub></div>
+              <div id="mho-zang-out" class="text-base sm:text-lg font-mono font-bold text-grid-600 dark:text-sky-400 mt-0.5">--°</div>
+            </div>
+            <div class="bg-white dark:bg-slate-900/80 rounded-xl border border-slate-200 dark:border-slate-800 p-3.5 flex flex-col justify-between">
+              <div class="text-[11px] font-medium text-slate-500 uppercase">Trip Decision</div>
+              <div id="mho-trip-badge" class="mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold">--</div>
+            </div>
+          </div>
+
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 blueprint-bg shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-sm font-bold">R-X Impedance Plane (Zone 1, Zone 2 &amp; Zone 3 Mho Circles)</h4>
+              <span class="text-xs font-mono text-slate-500">Z<sub>app</sub> = m·Z<sub>L</sub> + R<sub>f</sub></span>
+            </div>
+            <div class="relative h-72 sm:h-80 w-full">
+              <canvas id="chart-mho"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         VIEW 4: OPEN-SOURCE TOOLS MATRIX (#view-tools)
+    ================================================================= -->
+    <section id="view-tools" class="view-section hidden space-y-6">
+      <div>
+        <span class="text-xs font-mono font-semibold uppercase tracking-wider text-grid-600 dark:text-grid-500">Open-Source Power Engineering Ecosystem</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">Open-Source Tools Matrix</h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
+          Curated matrix of production-grade open-source libraries for steady-state power flow, OPF, EMT/RMS dynamics, HVDC controls, and protection engineering.
+        </p>
+      </div>
+
+      <!-- Search & Category Filters -->
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-slate-900/70 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div class="relative flex-1 max-w-md">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input id="tools-search-input" type="text" placeholder="Filter by name, language, license, or capability..."
+                 class="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-grid-500" />
+        </div>
+        <div id="tools-category-pills" class="flex flex-wrap items-center gap-2"></div>
+      </div>
+
+      <!-- Desktop Responsive Table -->
+      <div class="hidden md:block bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-950/60 text-[11px] font-mono uppercase tracking-wider text-slate-500">
+                <th class="py-3.5 px-4">Tool</th>
+                <th class="py-3.5 px-4">Language</th>
+                <th class="py-3.5 px-4">Domain</th>
+                <th class="py-3.5 px-4">License</th>
+                <th class="py-3.5 px-4">Key Strengths</th>
+                <th class="py-3.5 px-4">Docs</th>
+              </tr>
+            </thead>
+            <tbody id="tools-table-body" class="divide-y divide-slate-200/70 dark:divide-slate-800/70 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile Cards Grid -->
+      <div id="tools-cards-grid" class="grid grid-cols-1 gap-4 md:hidden"></div>
+    </section>
+
+    <!-- ================================================================
+         VIEW 5: CONTACT & FEEDBACK (#view-contact)
+    ================================================================= -->
+    <section id="view-contact" class="view-section hidden space-y-8">
+      <div>
+        <span class="text-xs font-mono font-semibold uppercase tracking-wider text-grid-600 dark:text-grid-500">Community &amp; Collaboration</span>
+        <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">Contact &amp; Engineering Feedback</h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl">
+          Suggest new HVDC/protection simulators, report a model discrepancy, or collaborate on open-source grid tutorials.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div class="lg:col-span-7 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-5">
+          <div id="contact-success-banner" class="hidden rounded-xl p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs sm:text-sm flex items-start gap-2.5">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5"></i>
+            <span>Thank you! Your feedback has been recorded and added to the recent submissions log.</span>
+          </div>
+
+          <form id="contact-form" class="space-y-4" novalidate>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label for="contact-name" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Your Name *</label>
+                <input id="contact-name" type="text" required placeholder="e.g., Priya Sharma"
+                       class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-grid-500" />
+              </div>
+              <div>
+                <label for="contact-email" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Email Address *</label>
+                <input id="contact-email" type="email" required placeholder="engineer@utility.org"
+                       class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-grid-500" />
+              </div>
+            </div>
+
+            <div>
+              <label for="contact-topic" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Topic</label>
+              <select id="contact-topic" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-grid-500">
+                <option value="LCC/VSC HVDC">LCC / VSC-HVDC Modeling</option>
+                <option value="Protection & Relaying">Protection &amp; Relay Coordination</option>
+                <option value="Simulator Bug / Feature">Simulator Feature Request / Bug</option>
+                <option value="Open-Source Collaboration">Open-Source Collaboration</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="contact-message" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Message *</label>
+              <textarea id="contact-message" rows="4" required placeholder="Share your question, simulation parameters, or feedback..."
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-grid-500"></textarea>
+            </div>
+
+            <div id="contact-error-msg" class="hidden text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-lg px-3 py-2"></div>
+
+            <button type="submit"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-grid-600 hover:bg-grid-700 text-white font-semibold text-sm shadow-md shadow-grid-600/20 transition-all">
+              <i data-lucide="send" class="w-4 h-4"></i>
+              Send Feedback
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-5 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i data-lucide="inbox" class="w-4 h-4 text-grid-500"></i>
+              Recent Submissions
+            </h3>
+            <button id="clear-submissions-btn" type="button" class="text-xs font-mono text-slate-500 hover:text-rose-500 transition-colors">Clear Local</button>
+          </div>
+          <div id="recent-submissions-list" class="space-y-3 max-h-80 overflow-y-auto pr-1 code-scroll"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================
+         VIEW 6: AUTHOR STUDIO (#view-studio — ADMIN ONLY)
+    ================================================================= -->
+    <section id="view-studio" class="view-section hidden space-y-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-emerald-950 via-slate-900 to-grid-950 text-white rounded-2xl p-6 border border-emerald-800/50 shadow-lg">
+        <div>
+          <div class="flex flex-wrap items-center gap-2 mb-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-[11px] font-mono">
+              <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+              Admin-Only Publishing Console
+            </span>
+            <span id="studio-storage-badge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/30 text-sky-200 text-[11px] font-mono">
+              Storage: Initializing
+            </span>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">GridPulse Author Studio</h2>
+          <p id="studio-author-greeting" class="text-xs sm:text-sm text-slate-300 mt-1">
+            Publish technical articles live to the public feed, manage existing posts, export JSON backups, or update your passcode.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5">
+          <button id="studio-view-public-btn" type="button"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/15 border border-white/15 transition-colors">
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            View Public Articles
+          </button>
+          <button id="studio-lock-btn" type="button"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-400/30 transition-colors">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+            Lock / Sign Out
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left: Write / Edit Article -->
+        <div class="lg:col-span-7 bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-5">
+          <div class="flex items-center justify-between gap-3">
+            <h3 id="studio-form-heading" class="font-bold text-lg flex items-center gap-2">
+              <i data-lucide="file-plus-2" class="w-5 h-5 text-emerald-500"></i>
+              Write New Article
+            </h3>
+            <button id="studio-cancel-edit-btn" type="button"
+                    class="hidden px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors">
+              Cancel Edit
+            </button>
+          </div>
+
+          <form id="studio-article-form" class="space-y-4" novalidate>
+            <input id="studio-edit-id" type="hidden" value="" />
+
+            <div>
+              <label for="studio-title" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Article Title *</label>
+              <input id="studio-title" type="text" required placeholder="e.g., Subsynchronous Torsional Interaction (SSTI) in LCC-HVDC Links"
+                     class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+              <div>
+                <label for="studio-category" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Category *</label>
+                <select id="studio-category" class="w-full px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                  <option value="HVDC">HVDC</option>
+                  <option value="Protection">Protection</option>
+                  <option value="Grid Modeling">Grid Modeling</option>
+                  <option value="Open Source">Open Source</option>
+                </select>
+              </div>
+              <div>
+                <label for="studio-readtime" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Read Time</label>
+                <input id="studio-readtime" type="text" placeholder="6 min read"
+                       class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+              <div>
+                <label for="studio-standard" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Standard / Tag</label>
+                <input id="studio-standard" type="text" placeholder="e.g., CIGRE TB 604"
+                       class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              </div>
+            </div>
+
+            <div>
+              <label for="studio-summary" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Executive Summary *</label>
+              <textarea id="studio-summary" rows="2" required placeholder="Concise 1–2 sentence overview displayed on the article card..."
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+            </div>
+
+            <!-- Body Editor with Toolbar + Live Preview Toggle -->
+            <div>
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                <label for="studio-content" class="text-xs font-semibold text-slate-600 dark:text-slate-400">Article Body (HTML or Markdown-lite) *</label>
+                <div class="flex flex-wrap items-center gap-1">
+                  <button type="button" class="studio-fmt-btn px-2 py-1 rounded-md text-[11px] font-mono bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" data-fmt="bold">B</button>
+                  <button type="button" class="studio-fmt-btn px-2 py-1 rounded-md text-[11px] font-mono bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" data-fmt="heading">H3</button>
+                  <button type="button" class="studio-fmt-btn px-2 py-1 rounded-md text-[11px] font-mono bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" data-fmt="list">List</button>
+                  <button type="button" class="studio-fmt-btn px-2 py-1 rounded-md text-[11px] font-mono bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700" data-fmt="code">Eq/Code</button>
+                  <button type="button" id="studio-preview-toggle"
+                          class="ml-1 inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-grid-50 dark:bg-grid-950 text-grid-700 dark:text-sky-300 border border-grid-200 dark:border-grid-800 transition-colors">
+                    <i data-lucide="eye" class="w-3 h-3"></i> Live Preview
+                  </button>
+                </div>
+              </div>
+
+              <textarea id="studio-content" rows="8" required placeholder="Write paragraphs, headings (## Title), bullet lists (- Item), **bold**, or `inline equations`..."
+                        class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-mono leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+
+              <div id="studio-live-preview" class="hidden min-h-[200px] p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-grid-300 dark:border-grid-800 text-sm leading-relaxed space-y-3 text-slate-700 dark:text-slate-300"></div>
+            </div>
+
+            <!-- Optional Code Snippet -->
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 space-y-3">
+              <div class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <i data-lucide="code-2" class="w-3.5 h-3.5 text-grid-500"></i>
+                Optional Code Block
+              </div>
+              <input id="studio-code-title" type="text" placeholder="e.g., Python: HVDC Commutation Overlap Solver"
+                     class="w-full px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+              <textarea id="studio-code" rows="4" placeholder="# Paste optional Python, Julia, or Modelica snippet..."
+                        class="w-full px-3 py-2 rounded-lg bg-slate-950 text-slate-100 border border-slate-800 text-xs font-mono code-scroll focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+            </div>
+
+            <div id="studio-form-error" class="hidden text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-lg px-3 py-2"></div>
+
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+              <button id="studio-publish-btn" type="submit"
+                      class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md shadow-emerald-600/20 transition-all">
+                <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                <span id="studio-publish-btn-text">Publish Live</span>
+              </button>
+              <button id="studio-clear-form-btn" type="button"
+                      class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-colors">
+                Clear Form
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Right: Manage Published Articles & Security -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="font-bold text-base flex items-center gap-2">
+                <i data-lucide="database" class="w-4 h-4 text-grid-500"></i>
+                Published Articles
+              </h3>
+              <div class="flex items-center gap-2">
+                <span id="studio-published-count" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">0 live</span>
+                <button id="studio-export-all-btn" type="button"
+                        class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors">
+                  <i data-lucide="copy" class="w-3 h-3"></i> Copy JSON Backup
+                </button>
+              </div>
+            </div>
+            <div id="studio-articles-list" class="space-y-3 max-h-[380px] overflow-y-auto pr-1 code-scroll"></div>
+          </div>
+
+          <!-- Update Author Passcode -->
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i data-lucide="key-round" class="w-4 h-4 text-amber-500"></i>
+              Update Author Passcode
+            </h3>
+            <form id="studio-passcode-form" class="space-y-3" novalidate>
+              <div>
+                <label for="studio-cur-passcode" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Current Passcode</label>
+                <input id="studio-cur-passcode" type="password" required placeholder="Enter current passcode"
+                       class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              </div>
+              <div>
+                <label for="studio-new-passcode" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">New Passcode (min 6 chars)</label>
+                <input id="studio-new-passcode" type="password" required minlength="6" placeholder="Enter new passcode"
+                       class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              </div>
+              <div id="studio-passcode-msg" class="hidden text-xs font-medium rounded-lg px-3 py-2"></div>
+              <button type="submit"
+                      class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-xs transition-colors">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                Save New Passcode
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="border-t border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-950/70 py-6 mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+      <div class="flex items-center gap-2 font-medium">
+        <i data-lucide="zap" class="w-3.5 h-3.5 text-grid-500"></i>
+        <span>GridPulse &mdash; Open-Source Power Systems, Protection &amp; HVDC Lab</span>
+      </div>
+      <div class="flex items-center gap-3 font-mono">
+        <span>Built for Power Engineers &bull; <a href="https://github.com/Ashu-kd" target="_blank" rel="noopener noreferrer" class="text-grid-600 dark:text-sky-400 hover:underline">@Ashu-kd</a></span>
+        <span class="text-slate-300 dark:text-slate-700">|</span>
+        <button id="footer-author-portal-btn" type="button" title="Admin / Author Portal (Ctrl+Shift+A)"
+                class="inline-flex items-center gap-1 text-slate-400 hover:text-grid-600 dark:hover:text-sky-400 transition-colors">
+          <i data-lucide="lock" class="w-3 h-3"></i>
+          <span>Author Portal</span>
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==================== ARTICLE READER MODAL ==================== -->
+  <div id="article-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-3xl w-full max-h-[88vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="flex items-start justify-between gap-4 p-5 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <span id="modal-article-category" class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-grid-50 dark:bg-grid-950 text-grid-700 dark:text-sky-300 border border-grid-100 dark:border-grid-900 mb-2"></span>
+          <h3 id="modal-article-title" class="text-xl font-extrabold leading-snug"></h3>
+          <div id="modal-article-meta" class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-mono"></div>
+        </div>
+        <button id="close-article-modal" type="button" aria-label="Close article reader"
+                class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="modal-article-body" class="p-5 sm:p-6 overflow-y-auto space-y-5 text-sm leading-relaxed text-slate-700 dark:text-slate-300"></div>
+    </div>
+  </div>
+
+  <!-- ==================== AUTHOR PORTAL MODAL (ADMIN ONLY) ==================== -->
+  <div id="author-portal-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full shadow-2xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <i data-lucide="shield-check" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 id="portal-modal-title" class="text-sm font-extrabold">Author Portal</h3>
+            <p class="text-[11px] font-mono text-slate-500">Admin / Author Restricted Access</p>
+          </div>
+        </div>
+        <button id="close-portal-modal" type="button" aria-label="Close Author Portal"
+                class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200/70 dark:hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <!-- Claim Admin Form (First-Time Setup) -->
+        <form id="portal-setup-form" class="hidden space-y-3.5" novalidate>
+          <div class="p-3 rounded-xl bg-grid-50 dark:bg-grid-950/60 border border-grid-200 dark:border-grid-900 text-xs text-grid-900 dark:text-sky-200 leading-relaxed">
+            <strong>Claim Admin Access:</strong> No Author Profile is configured yet. Create your Admin Name and secret Author Passcode to enable live publishing.
+          </div>
+          <div>
+            <label for="setup-author-name" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Author Name *</label>
+            <input id="setup-author-name" type="text" required placeholder="e.g., Ashu K."
+                   class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div>
+            <label for="setup-author-email" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Email (optional)</label>
+            <input id="setup-author-email" type="email" placeholder="author@gridpulse.org"
+                   class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div>
+            <label for="setup-passcode" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Secret Author Passcode * (min 6 chars)</label>
+            <input id="setup-passcode" type="password" required minlength="6" placeholder="Choose a secret passcode"
+                   class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div>
+            <label for="setup-passcode-confirm" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Confirm Passcode *</label>
+            <input id="setup-passcode-confirm" type="password" required minlength="6" placeholder="Re-enter passcode"
+                   class="w-full px-3.5 py-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div id="portal-setup-error" class="hidden text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-lg px-3 py-2"></div>
+          <button type="submit"
+                  class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm shadow-md transition-colors">
+            <i data-lucide="shield-plus" class="w-4 h-4"></i>
+            Claim Admin &amp; Open Studio
+          </button>
+        </form>
+
+        <!-- Unlock Author Studio Form -->
+        <form id="portal-signin-form" class="hidden space-y-3.5" novalidate>
+          <div>
+            <label for="signin-passcode" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Secret Author Passcode</label>
+            <input id="signin-passcode" type="password" required placeholder="Enter your Author Passcode"
+                   class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          </div>
+          <div id="portal-signin-error" class="hidden text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 rounded-lg px-3 py-2"></div>
+          <button type="submit"
+                  class="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-white text-white dark:text-slate-900 font-semibold text-sm transition-colors">
+            <i data-lucide="key-round" class="w-4 h-4"></i>
+            Unlock Author Studio
+          </button>
+          <p class="text-[11px] text-center text-slate-400 font-mono">Shortcut: Ctrl+Shift+A / Cmd+Shift+A</p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== DELETE CONFIRMATION MODAL ==================== -->
+  <div id="delete-confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+      <div class="flex items-start gap-3">
+        <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+          <i data-lucide="trash-2" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h4 class="font-bold text-sm">Delete Published Article?</h4>
+          <p id="delete-confirm-text" class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            This will permanently remove the article from the public feed.
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="delete-cancel-btn" type="button"
+                class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors">
+          Cancel
+        </button>
+        <button id="delete-confirm-btn" type="button"
+                class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition-colors">
+          Delete Permanently
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TOAST NOTIFICATION ==================== -->
+  <div id="toast" role="status" aria-live="polite"
+       class="fixed bottom-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs sm:text-sm font-medium shadow-xl border border-slate-700 dark:border-slate-300 translate-y-20 opacity-0 pointer-events-none transition-all duration-300">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 dark:text-emerald-600 shrink-0"></i>
+    <span id="toast-message">Done</span>
+  </div>
+
+  <!-- ==================== APPLICATION SCRIPT ==================== -->
+  <script type="module">
+    const initGridPulseApp = () => {
+      /* ======================================================================
+         1. SAFE HELPERS (Lucide Icons, Pure-JS SHA-256, Toast, Clipboard)
+      ====================================================================== */
+      function renderIcons() {
+        if (typeof window.lucide !== 'undefined' && typeof window.lucide.createIcons === 'function') {
+          window.lucide.createIcons();
+        }
+      }
+
+      function escapeHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      // Genuine FIPS 180-4 SHA-256 Pure-JS fallback for insecure contexts (file:// / sandboxed iframes)
+      function sha256PureJs(ascii) {
+        function rightRotate(value, amount) {
+          return (value >>> amount) | (value << (32 - amount));
+        }
+        const mathPow = Math.pow;
+        const maxWord = mathPow(2, 32);
+        let result = '';
+        const words = [];
+        const asciiBitLength = ascii.length * 8;
+        const hash = [];
+        const k = [];
+        let primeCounter = 0;
+        const isComposite = {};
+
+        for (let candidate = 2; primeCounter < 64; candidate++) {
+          if (!isComposite[candidate]) {
+            for (let i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+            hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+            k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+          }
+        }
+
+        const bytes = new TextEncoder().encode(ascii);
+        let msg = '';
+        for (let i = 0; i < bytes.length; i++) msg += String.fromCharCode(bytes[i]);
+        msg += '\x80';
+        while ((msg.length % 64) - 56) msg += '\x00';
+        for (let i = 0; i < msg.length; i++) {
+          const j = msg.charCodeAt(i);
+          words[i >> 2] |= j << (((3 - i) % 4) * 8);
+        }
+        words[words.length] = (asciiBitLength / maxWord) | 0;
+        words[words.length] = asciiBitLength;
+
+        const w = new Array(64);
+        for (let j = 0; j < words.length;) {
+          const oldHash = hash.slice(0, 8);
+          for (let i = 0; i < 64; i++) {
+            const w15 = w[i - 15];
+            const w2 = w[i - 2];
+            const a = hash[0];
+            const e = hash[4];
+            const temp1 =
+              hash[7] +
+              (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25)) +
+              ((e & hash[5]) ^ (~e & hash[6])) +
+              k[i] +
+              (w[i] =
+                i < 16
+                  ? words[j + i]
+                  : (w[i - 16] +
+                      (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3)) +
+                      w[i - 7] +
+                      (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))) |
+                    0);
+            const temp2 =
+              (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22)) +
+              ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+            hash[7] = hash[6];
+            hash[6] = hash[5];
+            hash[5] = hash[4];
+            hash[4] = (hash[3] + temp1) | 0;
+            hash[3] = hash[2];
+            hash[2] = hash[1];
+            hash[1] = hash[0];
+            hash[0] = (temp1 + temp2) | 0;
+          }
+          for (let i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+          j += 16;
+        }
+        for (let i = 0; i < 8; i++) {
+          for (let j = 3; j + 1; j--) {
+            const b = (hash[i] >> (j * 8)) & 255;
+            result += (b < 16 ? '0' : '') + b.toString(16);
+          }
+        }
+        return result;
+      }
+
+      async function sha256Hex(message) {
+        try {
+          if (window.crypto && window.crypto.subtle && typeof window.crypto.subtle.digest === 'function') {
+            const data = new TextEncoder().encode(message);
+            const buf = await window.crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+        } catch {
+          // Fall through to pure-JS SHA-256
+        }
+        return sha256PureJs(message);
+      }
+
+      let toastTimer = null;
+      function showToast(message) {
+        const toast = document.getElementById('toast');
+        const msgEl = document.getElementById('toast-message');
+        if (!toast || !msgEl) return;
+        msgEl.textContent = message;
+        toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+        toast.classList.add('translate-y-0', 'opacity-100');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+          toast.classList.remove('translate-y-0', 'opacity-100');
+        }, 2600);
+      }
+
+      function copyToClipboard(text, successMsg = 'Copied to clipboard') {
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          showToast(successMsg);
+        } catch {
+          showToast('Copy failed — please select and copy manually.');
+        }
+      }
+
+      function safeGetLocal(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch {
+          return fallback;
+        }
+      }
+
+      function safeSetLocal(key, val) {
+        try {
+          localStorage.setItem(key, JSON.stringify(val));
+        } catch {
+          // Ignore quota or storage restriction errors
+        }
+      }
+
+      function getCurrentMonthYear() {
+        return new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      }
+
+      function estimateReadTime(text) {
+        const words = String(text || '').replace(/<[^>]+>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+        return `${Math.max(1, Math.ceil(words / 180))} min read`;
+      }
+
+      function renderRichArticleHtml(rawText) {
+        const text = String(rawText || '').trim();
+        if (!text) return '<p class="text-slate-400 italic">No content yet.</p>';
+        // If author entered raw HTML tags, sanitize basic script tags and render directly
+        if (/<(p|h[2-5]|ul|ol|li|div|blockquote|strong|code)\b/i.test(text)) {
+          return text.replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '');
+        }
+        // Otherwise render Markdown-lite safely
+        const lines = text.split('\n');
+        let html = '';
+        let inList = false;
+        const fmt = str => escapeHtml(str)
+          .replace(/\*\*(.+?)\*\*/g, '<strong class="font-semibold text-slate-900 dark:text-white">$1</strong>')
+          .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-mono text-xs text-grid-700 dark:text-sky-300">$1</code>');
+
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) {
+            if (inList) { html += '</ul>'; inList = false; }
+            continue;
+          }
+          if (line.startsWith('## ')) {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += `<h4 class="text-base font-extrabold text-slate-900 dark:text-white pt-2">${fmt(line.slice(3))}</h4>`;
+          } else if (line.startsWith('### ')) {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += `<h5 class="text-sm font-bold text-slate-900 dark:text-white pt-1">${fmt(line.slice(4))}</h5>`;
+          } else if (line.startsWith('- ') || line.startsWith('* ')) {
+            if (!inList) { html += '<ul class="list-disc pl-5 space-y-1.5">'; inList = true; }
+            html += `<li>${fmt(line.slice(2))}</li>`;
+          } else {
+            if (inList) { html += '</ul>'; inList = false; }
+            html += `<p>${fmt(line)}</p>`;
+          }
+        }
+        if (inList) html += '</ul>';
+        return html;
+      }
+
+      /* ======================================================================
+         2. DATA STORE (Built-in Articles, 4 Tutorial Tracks, 10 OSS Tools)
+      ====================================================================== */
+      const BUILTIN_ARTICLES = [
+        {
+          id: 'lcc-hvdc-static-vdcol',
+          title: 'LCC-HVDC Static Characteristics, Margin Angle & VDCOL Design',
+          category: 'HVDC',
+          readTime: '11 min read',
+          standard: 'CIGRE Benchmark',
+          summary: 'Rectifier CIA/CC and Inverter CEA/CC Vd–Id plane equations, current margin ΔId mode shifts, VDCOL voltage recovery, and commutation failure immunity.',
+          bodyHtml: `
+            <p>Line-Commutated Converter (LCC) HVDC links use thyristor bridges whose firing angle <strong>&alpha;</strong> (rectifier) and extinction margin angle <strong>&gamma;</strong> (inverter) determine DC voltage and power transfer. Plotting both steady-state characteristics on the <strong>V<sub>d</sub>&ndash;I<sub>d</sub> plane</strong> (referred to the rectifier terminal) yields the unique operating point at their intersection.</p>
+            <p>During normal operation, the <strong>Rectifier</strong> regulates DC current (Constant Current, CC) at <code>I_ord</code> while the <strong>Inverter</strong> maintains minimum extinction angle <code>&gamma;_min &approx; 17&deg;&ndash;18&deg;</code> (Constant Extinction Angle, CEA) to maximize DC voltage and minimize reactive power demand. A <strong>Current Margin &Delta;I<sub>d</sub></strong> (typically 0.10 pu) separates the rectifier and inverter vertical CC segments.</p>
+            <p>When rectifier AC voltage <code>E_ar</code> sags, the rectifier hits its minimum firing angle ceiling (Constant Ignition Angle, CIA) and control smoothly transfers to Inverter CC at <code>I_ord &minus; &Delta;I_d</code>. Under severe AC faults, the <strong>Voltage-Dependent Current Order Limiter (VDCOL)</strong> linearly throttles <code>I_ord</code> below <code>V_d = 0.80 pu</code> to limit reactive power absorption and prevent consecutive commutation failures.</p>
+          `,
+          equations: [
+            'V_dr = V_do,r · cos(α) − R_cr · I_d   (Rectifier CIA ceiling)',
+            'V_di,ref = V_do,i · cos(γ) + (R_d − R_ci) · I_d   (Inverter CEA referred to rectifier)',
+            'cos(γ + μ_i) = cos(γ) − (X_ci · I_d) / V_do,i   (Inverter commutation overlap)'
+          ],
+          codeTitle: 'Python / NumPy: LCC-HVDC Vd–Id Operating Point Solver',
+          code: `import numpy as np
+
+def solve_lcc(ear=1.0, eai=1.0, alpha_min=5.0, gamma_min=18.0,
+              i_ord=1.0, delta_id=0.10, xc=0.14, rd=0.03):
+    vdo_r, vdo_i = 1.15 * ear, 1.15 * eai
+    rcr = rci = 0.5 * xc
+    vd_cia = vdo_r * np.cos(np.radians(alpha_min)) - rcr * i_ord
+    vd_cea = vdo_i * np.cos(np.radians(gamma_min)) + (rd - rci) * i_ord
+
+    if vd_cia >= vd_cea:
+        mode, id_op, vd_op = "Rectifier CC / Inverter CEA", i_ord, vd_cea
+        alpha = np.degrees(np.arccos(np.clip((vd_op + rcr * id_op) / vdo_r, -1, 1)))
+        gamma = gamma_min
+    else:
+        mode = "Rectifier CIA / Inverter CC"
+        id_op = max(0.1, i_ord - delta_id)
+        vd_op = vdo_r * np.cos(np.radians(alpha_min)) - rcr * id_op
+        alpha = alpha_min
+        v_di = vd_op - rd * id_op
+        gamma = np.degrees(np.arccos(np.clip((v_di + rci * id_op) / vdo_i, -1, 1)))
+    return dict(mode=mode, Vd=round(vd_op, 3), Id=round(id_op, 3),
+                alpha=round(alpha, 2), gamma=round(gamma, 2))
+
+print(solve_lcc(ear=1.00, eai=1.00))
+print(solve_lcc(ear=0.80, eai=1.00))`
+        },
+        {
+          id: 'iec60255-idmt-python',
+          title: 'IEC 60255-151 IDMT Overcurrent Relay Coordination in Python',
+          category: 'Protection',
+          readTime: '7 min read',
+          standard: 'IEC 60255-151',
+          summary: 'Implementing Standard, Very, and Extremely Inverse overcurrent equations, computing CTI grading margins, and automating relay coordination audits.',
+          bodyHtml: `
+            <p>Inverse Definite Minimum Time (IDMT) overcurrent relays (ANSI 51) clear high-current faults rapidly while tolerating temporary overload swings. Under <strong>IEC 60255-151</strong>, curve steepness is governed by constants <code>(k, &alpha;)</code> selected to match downstream fuses or feeder fault gradients.</p>
+            <p>Proper selectivity requires maintaining a minimum <strong>Coordination Time Interval (CTI &ge; 0.30 s)</strong> between downstream and upstream relays at maximum fault current to account for breaker opening time, CT ratio errors, and relay overshoot.</p>
+          `,
+          equations: [
+            't_trip = TMS · k / [ (I_f / I_p)^α − 1 ]',
+            'CTI = t_upstream − t_downstream ≥ 0.30 s'
+          ],
+          codeTitle: 'Python: IEC 60255-151 IDMT Coordination Check',
+          code: `CURVES = {"SI": (0.14, 0.02), "VI": (13.5, 1.0), "EI": (80.0, 2.0), "LTI": (120.0, 1.0)}
+
+def idmt_time(i_fault, i_pickup, tms, curve="SI"):
+    k, alpha = CURVES[curve]
+    psm = i_fault / i_pickup
+    return float("inf") if psm <= 1.0 else tms * k / (psm**alpha - 1.0)
+
+t1 = idmt_time(2400, 200, 0.20, "SI")
+t2 = idmt_time(2400, 200, 0.45, "SI")
+print(f"Relay 1: {t1:.3f}s | Relay 2: {t2:.3f}s | CTI: {t2 - t1:.3f}s")`
+        },
+        {
+          id: 'vsc-hvdc-pq-dclink',
+          title: 'VSC-HVDC P-Q Capability & DC-Link Voltage Dynamics',
+          category: 'HVDC',
+          readTime: '9 min read',
+          standard: 'CIGRE TB 604',
+          summary: 'Decoupled d-q current control, converter current and modulation voltage limits on the P-Q plane, and DC-link capacitor energy balance during power steps.',
+          bodyHtml: `
+            <p>Voltage Source Converter (VSC) HVDC links provide independent four-quadrant active (<strong>P</strong>) and reactive (<strong>Q</strong>) power control in a PCC-aligned synchronous <code>d-q</code> frame. Unlike LCC-HVDC, VSC stations can connect to weak or passive grids and support black-start restoration.</p>
+            <p>The steady-state P-Q capability region is bounded by the semiconductor current circle <code>S_max = V_ac &middot; I_max</code> and the converter modulation voltage circle. Dynamically, any mismatch between AC power and DC power accelerates the DC-link capacitor voltage according to the energy balance equation.</p>
+          `,
+          equations: [
+            'P = (3/2) · v_d · i_d,   Q = −(3/2) · v_d · i_q',
+            '√(P² + Q²) ≤ V_ac · I_max',
+            'C_dc · V_dc · (dV_dc / dt) = P_ac − P_dc'
+          ],
+          codeTitle: 'Python: VSC-HVDC P-Q Feasibility & DC Energy Constant',
+          code: `import math
+
+def vsc_check(p_pu, q_pu, v_ac=1.0, c_dc_mf=2.4, v_dc_kv=640.0, s_base_mva=1000.0):
+    s_mag = math.hypot(p_pu, q_pu)
+    h_dc_ms = (0.5 * (c_dc_mf * 1e-3) * (v_dc_kv * 1e3)**2) / (s_base_mva * 1e6) * 1e3
+    return {"|S|_pu": round(s_mag, 3), "Feasible": s_mag <= v_ac, "H_dc_ms": round(h_dc_ms, 2)}
+
+print(vsc_check(0.75, 0.30, v_ac=0.95))`
+        },
+        {
+          id: 'three-zone-mho-rx',
+          title: 'Three-Zone Mho Distance Relay Characteristics on the R-X Plane',
+          category: 'Protection',
+          readTime: '8 min read',
+          standard: 'IEEE C37.113',
+          summary: 'Configuring Zone 1 (80%), Zone 2 (120%), and Zone 3 (220%) Mho circles, quantifying fault arc resistance under-reach, and evaluating Source Impedance Ratio (SIR).',
+          bodyHtml: `
+            <p>Distance relays (ANSI 21) compute apparent impedance <code>Z_app = V / I</code> to locate transmission line faults independent of source strength variations. <strong>Zone 1 (80%)</strong> trips instantaneously, <strong>Zone 2 (120%)</strong> clears remote-end faults after ~350 ms, and <strong>Zone 3 (220%)</strong> provides remote backup for adjacent lines.</p>
+            <p>High-impedance fault arcs add pure resistance <code>R_f</code> along the real axis, pushing <code>Z_app</code> horizontally toward the edge of the Mho circle. On short lines with high Source Impedance Ratio (SIR), careful reach and load-encroachment blinding checks are essential.</p>
+          `,
+          equations: [
+            'Z_app = m · Z_L + R_f',
+            'Mho Trip Condition: |Z_app − Z_reach / 2| ≤ |Z_reach| / 2'
+          ],
+          codeTitle: 'Python: 3-Zone Mho Distance Relay Evaluator',
+          code: `import cmath
+
+def mho_decision(z_app, z_line, zones=(0.80, 1.20, 2.20)):
+    for idx, reach in enumerate(zones, start=1):
+        zr = z_line * reach
+        if abs(z_app - zr / 2) <= abs(zr) / 2:
+            return f"Zone {idx} Trip"
+    return "No Trip"
+
+z_l = cmath.rect(20.0, cmath.pi * 75 / 180)
+print(mho_decision(0.60 * z_l + 4.5, z_l))`
+        },
+        {
+          id: 'pypowsybl-pandapower-modeling',
+          title: 'Modern Open-Source Grid Modeling with PyPowSyBl & pandapower',
+          category: 'Open Source',
+          readTime: '7 min read',
+          standard: 'IEEE 14-Bus / CGMES',
+          summary: 'Comparing PyPowSyBl and pandapower for fast Newton-Raphson AC load flow, CGMES/IIDM interoperability, and automated N-1 security analysis.',
+          bodyHtml: `
+            <p>Modern transmission and distribution studies increasingly rely on open-source Python engines. <strong>PyPowSyBl</strong> provides C++/Java-accelerated AC/DC load flow, HVDC line modeling, and European CGMES/IIDM interoperability, while <strong>pandapower</strong> excels in rapid scripting, IEC 60909 short-circuit calculations, and DataFrame-centric analytics.</p>
+            <p>Combining automated N-1 contingency loops with continuous integration allows grid engineers to validate thermal limits and voltage profiles reproducibly across thousands of dispatch scenarios.</p>
+          `,
+          equations: [
+            'P_i = Σ |V_i||V_k| (G_ik cos θ_ik + B_ik sin θ_ik)',
+            'N-1 Criterion: max(I_line / I_rated) ≤ 100% ∀ single-element outages'
+          ],
+          codeTitle: 'Python: PyPowSyBl & pandapower Quick Load Flow',
+          code: `import pypowsybl as pp_bl
+
+net = pp_bl.network.create_ieee14()
+res = pp_bl.loadflow.run_ac(net)
+print("Loadflow Status:", res[0].status)
+print(net.get_buses()[["v_mag", "v_angle"]].head())`
+        }
+      ];
+
+      const TUTORIAL_TRACKS = [
+        {
+          id: 'lcc-track',
+          name: 'LCC-HVDC Control & Protection Track',
+          badge: 'CIGRE Benchmark',
+          labTarget: 'lcc',
+          labLabel: 'Open LCC-HVDC Lab',
+          steps: [
+            { id: 't-lcc-1', title: 'Derive Rectifier CIA & Inverter CEA equations on the Vd–Id plane' },
+            { id: 't-lcc-2', title: 'Verify Current Margin (ΔId = 0.10 pu) mode shift during rectifier AC sag' },
+            { id: 't-lcc-3', title: 'Analyze Inverter AC voltage dip (0.75 pu) & commutation overlap angle μi' },
+            { id: 't-lcc-4', title: 'Enable VDCOL ramp (0.80→0.30 pu) to stabilize severe AC fault recovery' }
+          ]
+        },
+        {
+          id: 'vsc-track',
+          name: 'VSC-HVDC & Grid-Forming Control Track',
+          badge: 'VSC-MMC',
+          labTarget: 'hvdc',
+          labLabel: 'Open VSC-HVDC Lab',
+          steps: [
+            { id: 't-vsc-1', title: 'Map decoupled d-q active (P*) and reactive (Q*) power references' },
+            { id: 't-vsc-2', title: 'Test AC voltage sag derating of the circular MVA current limit' },
+            { id: 't-vsc-3', title: 'Size DC-link capacitance Cdc and energy constant H_dc for step disturbances' },
+            { id: 't-vsc-4', title: 'Tune DC voltage controller damping ζ to eliminate post-step overshoot' }
+          ]
+        },
+        {
+          id: 'prot-track',
+          name: 'Power System Protection & Relaying Track',
+          badge: 'IEC 60255 / IEEE C37.113',
+          labTarget: 'idmt',
+          labLabel: 'Open IDMT / Mho Lab',
+          steps: [
+            { id: 't-prot-1', title: 'Compare SI, VI, EI, and LTI curves on log-log TCC plots' },
+            { id: 't-prot-2', title: 'Grade downstream & upstream TMS to enforce CTI ≥ 0.30 s' },
+            { id: 't-prot-3', title: 'Set Zone 1 (80%), Zone 2 (120%) & Zone 3 (220%) Mho circles on R-X plane' },
+            { id: 't-prot-4', title: 'Evaluate high-resistance fault arc (Rf) under-reach in Zone 1' }
+          ]
+        },
+        {
+          id: 'oss-track',
+          name: 'Open-Source Grid Simulation (Python/Julia) Track',
+          badge: 'PyPowSyBl / pandapower / Julia',
+          labTarget: 'mho',
+          labLabel: 'Explore Lab & Tools',
+          steps: [
+            { id: 't-oss-1', title: 'Run Newton-Raphson AC power flow in pandapower & PyPowSyBl' },
+            { id: 't-oss-2', title: 'Automate N-1 line contingency screening and voltage limit audits' },
+            { id: 't-oss-3', title: 'Formulate hybrid AC/DC OPF relaxations in PowerModels.jl' },
+            { id: 't-oss-4', title: 'Run dynamic RMS/EMT fault studies with OpenIPSL, Dynawo, or DPsim' }
+          ]
+        }
+      ];
+
+      const OSS_TOOLS = [
+        { name: 'PyPowSyBl', language: 'Python / Java / C++', domain: 'Power Flow & OPF', license: 'MPL-2.0', strengths: 'Fast AC/DC load flow, HVDC links, CGMES/IIDM, security analysis', url: 'https://pypowsybl.readthedocs.io/' },
+        { name: 'pandapower', language: 'Python', domain: 'Power Flow & OPF', license: 'BSD-3-Clause', strengths: 'DataFrame grid modeling, IEC 60909 short-circuit, state estimation', url: 'https://www.pandapower.org/' },
+        { name: 'PyPSA', language: 'Python', domain: 'Power Flow & OPF', license: 'MIT', strengths: 'Sector-coupled multi-period LOPF, HVDC expansion planning, storage', url: 'https://pypsa.org/' },
+        { name: 'MATPOWER', language: 'MATLAB / Octave', domain: 'Power Flow & OPF', license: 'BSD-3-Clause', strengths: 'Classic AC/DC OPF benchmark library & IEEE test cases', url: 'https://matpower.org/' },
+        { name: 'OpenDSS', language: 'Pascal / C++ / Python', domain: 'Protection & Control', license: 'BSD-3-Clause', strengths: 'Unbalanced 3-phase feeders, harmonics, DER & relay curve modeling', url: 'https://www.epri.com/pages/sa/opendss' },
+        { name: 'PowerModels.jl', language: 'Julia', domain: 'Julia / Modelica', license: 'BSD-3-Clause', strengths: 'High-speed AC-OPF, SOC/SDP relaxations & AC/DC HVDC formulations', url: 'https://lanl-ansi.github.io/PowerModels.jl/stable/' },
+        { name: 'OpenIPSL', language: 'Modelica', domain: 'Julia / Modelica', license: 'BSD-3-Clause', strengths: 'Phasor time-domain generator, exciter & HVDC Modelica library', url: 'https://openipsl.org/' },
+        { name: 'Dynawo', language: 'C++ / Modelica', domain: 'EMT & Dynamic', license: 'MPL-2.0', strengths: 'Hybrid C++/Modelica large-scale transmission stability simulator (RTE)', url: 'https://dynawo.github.io/' },
+        { name: 'DPsim', language: 'C++ / Python', domain: 'EMT & Dynamic', license: 'MPL-2.0', strengths: 'Dynamic phasor & real-time EMT solver (open-source PSCAD alternative)', url: 'https://dpsim.fein-aachen.org/' },
+        { name: 'VeraGrid', language: 'Python', domain: 'Power Flow & OPF', license: 'MPL-2.0', strengths: 'Cross-platform GUI & engine for hybrid AC/DC VSC-HVDC & reliability', url: 'https://veragrid.org/' }
+      ];
+
+      /* ======================================================================
+         3. PERSISTENCE LAYER (Firebase Firestore + Seamless localStorage Fallback)
+      ====================================================================== */
+      const LOCAL_ADMIN_KEY = 'gridpulse-admin-config';
+      const LOCAL_ARTICLES_KEY = 'gridpulse-published-articles';
+      const LOCAL_FEEDBACK_KEY = 'gridpulse-feedback-submissions';
+      const TUTORIAL_STORAGE_KEY = 'gridpulse-tutorial-progress';
+
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+      const firebaseConfig = typeof __firebase_config !== 'undefined' ? (() => {
+        try { return JSON.parse(__firebase_config); } catch { return null; }
+      })() : null;
+      const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+      let fb = null; // Holds dynamically imported Firestore helpers
+      let db = null;
+      let auth = null;
+      let currentUser = null;
+      let usingCloud = false;
+
+      let adminConfig = safeGetLocal(LOCAL_ADMIN_KEY, null);
+      let publishedArticles = safeGetLocal(LOCAL_ARTICLES_KEY, []);
+      let feedbackSubmissions = safeGetLocal(LOCAL_FEEDBACK_KEY, []);
+      let isAuthorUnlocked = false;
+      let pendingDeleteArticleId = null;
+
+      function updateStorageBadge() {
+        const badge = document.getElementById('studio-storage-badge');
+        if (!badge) return;
+        badge.textContent = usingCloud ? 'Storage: Cloud Sync (Live)' : 'Storage: Local Browser Mode';
+      }
+
+      async function initFirebaseSafely() {
+        updateStorageBadge();
+        if (!firebaseConfig) return;
+        try {
+          const [appMod, authMod, fsMod] = await Promise.all([
+            import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js'),
+            import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js'),
+            import('https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js')
+          ]);
+          fb = fsMod;
+          const app = appMod.initializeApp(firebaseConfig);
+          db = fsMod.getFirestore(app);
+          auth = authMod.getAuth(app);
+
+          // RULE 3: Authenticate FIRST before any Firestore read/write
+          if (initialAuthToken) {
+            const cred = await authMod.signInWithCustomToken(auth, initialAuthToken);
+            currentUser = cred.user;
+          } else {
+            const cred = await authMod.signInAnonymously(auth);
+            currentUser = cred.user;
+          }
+
+          usingCloud = true;
+          updateStorageBadge();
+
+          // Subscribe to adminConfig (RULE 1 path)
+          const adminRef = fb.doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'adminConfig');
+          fb.onSnapshot(adminRef, snap => {
+            if (snap.exists()) {
+              adminConfig = snap.data();
+              safeSetLocal(LOCAL_ADMIN_KEY, adminConfig);
+              updateAuthorUiState();
+            }
+          }, err => console.warn('Admin config sync warning:', err));
+
+          // Subscribe to published articles (RULE 1 & RULE 2: simple collection query, sort in JS)
+          const articlesCol = fb.collection(db, 'artifacts', appId, 'public', 'data', 'articles');
+          fb.onSnapshot(articlesCol, snap => {
+            const items = [];
+            snap.forEach(d => items.push({ id: d.id, isPublished: true, ...d.data() }));
+            items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            publishedArticles = items;
+            safeSetLocal(LOCAL_ARTICLES_KEY, items);
+            renderArticles();
+            renderStudioArticlesList();
+          }, err => console.warn('Articles sync warning:', err));
+
+          // Subscribe to feedback submissions
+          const fbCol = fb.collection(db, 'artifacts', appId, 'public', 'data', 'feedback');
+          fb.onSnapshot(fbCol, snap => {
+            const items = [];
+            snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+            items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            feedbackSubmissions = items.slice(0, 8);
+            safeSetLocal(LOCAL_FEEDBACK_KEY, feedbackSubmissions);
+            renderSubmissions();
+          }, err => console.warn('Feedback sync warning:', err));
+        } catch (err) {
+          console.warn('Cloud storage unavailable; running cleanly in Local Browser Mode.', err);
+          usingCloud = false;
+          updateStorageBadge();
+        }
+      }
+
+      async function saveAdminConfig(configObj) {
+        adminConfig = configObj;
+        safeSetLocal(LOCAL_ADMIN_KEY, configObj);
+        if (usingCloud && currentUser && db && fb) {
+          const ref = fb.doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'adminConfig');
+          await fb.setDoc(ref, configObj);
+        }
+      }
+
+      async function savePublishedArticle(payload, editId = '') {
+        if (usingCloud && currentUser && db && fb) {
+          if (editId) {
+            const ref = fb.doc(db, 'artifacts', appId, 'public', 'data', 'articles', editId);
+            await fb.updateDoc(ref, payload);
+          } else {
+            const col = fb.collection(db, 'artifacts', appId, 'public', 'data', 'articles');
+            await fb.addDoc(col, payload);
+          }
+        } else {
+          if (editId) {
+            publishedArticles = publishedArticles.map(a => a.id === editId ? { ...a, ...payload, id: editId, isPublished: true } : a);
+          } else {
+            const newId = 'pub-' + Date.now();
+            publishedArticles.unshift({ id: newId, isPublished: true, ...payload });
+          }
+          safeSetLocal(LOCAL_ARTICLES_KEY, publishedArticles);
+          renderArticles();
+          renderStudioArticlesList();
+        }
+      }
+
+      async function removePublishedArticle(articleId) {
+        if (usingCloud && currentUser && db && fb) {
+          const ref = fb.doc(db, 'artifacts', appId, 'public', 'data', 'articles', articleId);
+          await fb.deleteDoc(ref);
+        } else {
+          publishedArticles = publishedArticles.filter(a => a.id !== articleId);
+          safeSetLocal(LOCAL_ARTICLES_KEY, publishedArticles);
+          renderArticles();
+          renderStudioArticlesList();
+        }
+      }
+
+      async function saveFeedbackSubmission(entry) {
+        if (usingCloud && currentUser && db && fb) {
+          const col = fb.collection(db, 'artifacts', appId, 'public', 'data', 'feedback');
+          await fb.addDoc(col, entry);
+        } else {
+          feedbackSubmissions.unshift({ id: 'fb-' + Date.now(), ...entry });
+          feedbackSubmissions = feedbackSubmissions.slice(0, 8);
+          safeSetLocal(LOCAL_FEEDBACK_KEY, feedbackSubmissions);
+          renderSubmissions();
+        }
+      }
+
+      /* ======================================================================
+         4. DARK MODE & NAVIGATION
+      ====================================================================== */
+      function isDarkMode() {
+        return document.documentElement.classList.contains('dark');
+      }
+
+      function initTheme() {
+        const saved = localStorage.getItem('gridpulse-theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark', saved === 'dark' || (!saved && prefersDark));
+      }
+
+      initTheme();
+
+      document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        try { localStorage.setItem('gridpulse-theme', isDarkMode() ? 'dark' : 'light'); } catch {}
+        updateAllChartsTheme();
+      });
+
+      const VIEWS = ['articles', 'tutorials', 'lab', 'tools', 'contact', 'studio'];
+      let currentView = 'articles';
+      let labInitialized = false;
+      let currentLabTab = 'lcc';
+
+      function switchView(viewName, targetLabTab = null) {
+        if (!VIEWS.includes(viewName)) return;
+        if (viewName === 'studio' && !isAuthorUnlocked) {
+          openAuthorPortalModal();
+          return;
+        }
+        currentView = viewName;
+
+        VIEWS.forEach(v => {
+          const el = document.getElementById(`view-${v}`);
+          if (el) el.classList.toggle('hidden', v !== viewName);
+        });
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+          const active = btn.dataset.view === viewName;
+          btn.classList.toggle('bg-grid-50', active);
+          btn.classList.toggle('dark:bg-grid-950/70', active);
+          btn.classList.toggle('text-grid-700', active);
+          btn.classList.toggle('dark:text-sky-400', active);
+          btn.classList.toggle('text-slate-600', !active);
+          btn.classList.toggle('dark:text-slate-300', !active);
+          btn.classList.toggle('hover:bg-slate-100', !active);
+          btn.classList.toggle('dark:hover:bg-slate-900', !active);
+        });
+
+        document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+          const active = btn.dataset.view === viewName;
+          btn.classList.toggle('bg-grid-50', active);
+          btn.classList.toggle('dark:bg-grid-950/80', active);
+          btn.classList.toggle('text-grid-700', active);
+          btn.classList.toggle('dark:text-sky-400', active);
+          btn.classList.toggle('text-slate-700', !active);
+          btn.classList.toggle('dark:text-slate-300', !active);
+        });
+
+        document.getElementById('mobile-menu').classList.add('hidden');
+        document.getElementById('mobile-menu-btn').setAttribute('aria-expanded', 'false');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        if (viewName === 'lab') {
+          if (!labInitialized) {
+            initLabSimulators();
+            labInitialized = true;
+          }
+          if (targetLabTab) {
+            switchLabSubtab(targetLabTab);
+          } else {
+            resizeActiveLabCharts();
+          }
+        }
+      }
+
+      document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchView(btn.dataset.view));
+      });
+      document.getElementById('brand-home-btn').addEventListener('click', () => switchView('articles'));
+      document.querySelectorAll('[data-jump]').forEach(btn => {
+        btn.addEventListener('click', () => switchView(btn.dataset.jump, btn.dataset.jumpLab || null));
+      });
+      document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+        const menu = document.getElementById('mobile-menu');
+        const hidden = menu.classList.toggle('hidden');
+        document.getElementById('mobile-menu-btn').setAttribute('aria-expanded', String(!hidden));
+      });
+
+      /* ======================================================================
+         5. VIEW 1: ARTICLES & READER MODAL
+      ====================================================================== */
+      const ARTICLE_CATEGORIES = ['All', 'HVDC', 'Protection', 'Grid Modeling', 'Open Source'];
+      let activeArticleCategory = 'All';
+
+      function getAllArticles() {
+        return [...publishedArticles.map(a => ({ ...a, isPublished: true })), ...BUILTIN_ARTICLES];
+      }
+
+      function renderArticleCategoryPills() {
+        const container = document.getElementById('article-category-pills');
+        container.innerHTML = ARTICLE_CATEGORIES.map(cat => {
+          const active = cat === activeArticleCategory;
+          const cls = active
+            ? 'bg-grid-600 text-white border-grid-600 shadow-sm'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700';
+          return `<button type="button" data-cat="${cat}" class="article-cat-pill px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${cls}">${cat}</button>`;
+        }).join('');
+
+        container.querySelectorAll('.article-cat-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activeArticleCategory = btn.dataset.cat;
+            renderArticleCategoryPills();
+            renderArticles();
+          });
+        });
+      }
+
+      function renderArticles() {
+        const query = document.getElementById('article-search-input').value.trim().toLowerCase();
+        const grid = document.getElementById('articles-grid');
+        const filtered = getAllArticles().filter(a => {
+          const matchCat = activeArticleCategory === 'All' || a.category === activeArticleCategory;
+          const matchQ = !query ||
+            (a.title || '').toLowerCase().includes(query) ||
+            (a.summary || '').toLowerCase().includes(query) ||
+            (a.standard || '').toLowerCase().includes(query) ||
+            (a.category || '').toLowerCase().includes(query);
+          return matchCat && matchQ;
+        });
+
+        if (filtered.length === 0) {
+          grid.innerHTML = `<div class="col-span-full text-center py-12 bg-white dark:bg-slate-900/60 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-sm text-slate-500">No articles match "${escapeHtml(query)}".</div>`;
+          return;
+        }
+
+        grid.innerHTML = filtered.map(article => `
+          <article data-article-id="${escapeHtml(article.id)}"
+                   class="article-card group cursor-pointer bg-white dark:bg-slate-900/80 rounded-2xl border ${article.isPublished ? 'border-emerald-300/80 dark:border-emerald-900' : 'border-slate-200 dark:border-slate-800'} p-5 flex flex-col justify-between hover:border-grid-500/70 hover:shadow-lg transition-all">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                  <span class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-grid-50 dark:bg-grid-950 text-grid-700 dark:text-sky-300 border border-grid-100 dark:border-grid-900">${escapeHtml(article.category)}</span>
+                  ${article.isPublished ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">Published</span>' : ''}
+                </div>
+                <span class="text-[11px] font-mono text-slate-400 truncate max-w-[130px]">${escapeHtml(article.standard || article.date || '')}</span>
+              </div>
+              <h3 class="font-bold text-base sm:text-lg leading-snug group-hover:text-grid-600 dark:group-hover:text-sky-400 transition-colors">${escapeHtml(article.title)}</h3>
+              <p class="mt-2.5 text-xs sm:text-sm text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">${escapeHtml(article.summary)}</p>
+            </div>
+            <div class="mt-5 pt-3.5 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+              <span class="font-mono text-slate-500 flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+                ${escapeHtml(article.readTime || '5 min read')}
+              </span>
+              <span class="font-semibold text-grid-600 dark:text-sky-400 inline-flex items-center gap-1 group-hover:translate-x-0.5 transition-transform">
+                Read Note <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+              </span>
+            </div>
+          </article>
+        `).join('');
+
+        grid.querySelectorAll('.article-card').forEach(card => {
+          card.addEventListener('click', () => openArticleModal(card.dataset.articleId));
+        });
+        renderIcons();
+      }
+
+      function openArticleModal(articleId) {
+        const article = getAllArticles().find(a => a.id === articleId);
+        if (!article) return;
+
+        document.getElementById('modal-article-category').textContent = article.category;
+        document.getElementById('modal-article-title').textContent = article.title;
+        document.getElementById('modal-article-meta').textContent = [
+          article.author ? `By ${article.author}` : null,
+          article.date || null,
+          article.standard || null,
+          article.readTime || null
+        ].filter(Boolean).join('  •  ');
+
+        const bodyHtml = article.isPublished
+          ? `<div class="space-y-3.5">${renderRichArticleHtml(article.content)}</div>`
+          : `<div class="space-y-3.5">${article.bodyHtml}</div>`;
+
+        const eqHtml = Array.isArray(article.equations) && article.equations.length
+          ? `<div class="rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-4">
+               <div class="text-[11px] font-mono uppercase tracking-wider font-bold text-grid-600 dark:text-sky-400 mb-2">Key Governing Equations</div>
+               <ul class="space-y-1.5 font-mono text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                 ${article.equations.map(eq => `<li class="flex items-start gap-2"><span class="text-grid-500">&rsaquo;</span><span>${escapeHtml(eq)}</span></li>`).join('')}
+               </ul>
+             </div>`
+          : '';
+
+        const codeHtml = article.code && article.code.trim()
+          ? `<div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100">
+               <div class="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-800">
+                 <span class="text-xs font-mono text-slate-300">${escapeHtml(article.codeTitle || 'Code Snippet')}</span>
+                 <button type="button" id="modal-copy-code-btn"
+                         class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono bg-grid-600 hover:bg-grid-500 text-white transition-colors">
+                   <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Code
+                 </button>
+               </div>
+               <pre class="p-4 text-xs font-mono overflow-x-auto code-scroll leading-relaxed"><code>${escapeHtml(article.code)}</code></pre>
+             </div>`
+          : '';
+
+        document.getElementById('modal-article-body').innerHTML = `${bodyHtml}${eqHtml}${codeHtml}`;
+        const copyBtn = document.getElementById('modal-copy-code-btn');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', () => copyToClipboard(article.code, 'Code snippet copied!'));
+        }
+
+        const modal = document.getElementById('article-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        renderIcons();
+      }
+
+      function closeArticleModal() {
+        const modal = document.getElementById('article-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      document.getElementById('close-article-modal').addEventListener('click', closeArticleModal);
+      document.getElementById('article-modal').addEventListener('click', e => {
+        if (e.target.id === 'article-modal') closeArticleModal();
+      });
+      document.getElementById('article-search-input').addEventListener('input', renderArticles);
+
+      /* ======================================================================
+         6. VIEW 2: TUTORIALS & TRACKS
+      ====================================================================== */
+      let activeTrackFilter = 'all';
+
+      function renderTutorialTabs() {
+        const container = document.getElementById('tutorial-track-tabs');
+        const tabs = [{ id: 'all', name: 'All Tracks' }, ...TUTORIAL_TRACKS.map(t => ({ id: t.id, name: t.name }))];
+        container.innerHTML = tabs.map(t => {
+          const active = t.id === activeTrackFilter;
+          const cls = active
+            ? 'bg-grid-600 text-white border-grid-600 shadow-sm'
+            : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800';
+          return `<button type="button" data-track="${t.id}" class="track-tab-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold border transition-colors ${cls}">${t.name}</button>`;
+        }).join('');
+
+        container.querySelectorAll('.track-tab-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activeTrackFilter = btn.dataset.track;
+            renderTutorialTabs();
+            renderTutorials();
+          });
+        });
+      }
+
+      function renderTutorials() {
+        const completed = safeGetLocal(TUTORIAL_STORAGE_KEY, {});
+        const totalSteps = TUTORIAL_TRACKS.reduce((s, t) => s + t.steps.length, 0);
+        const totalDone = TUTORIAL_TRACKS.reduce((s, t) => s + t.steps.filter(st => completed[st.id]).length, 0);
+        const overallPct = totalSteps ? Math.round((totalDone / totalSteps) * 100) : 0;
+
+        document.getElementById('overall-tutorial-summary').textContent = `${totalDone} of ${totalSteps} modules completed (${overallPct}%)`;
+        document.getElementById('overall-tutorial-bar').style.width = `${overallPct}%`;
+
+        const tracks = activeTrackFilter === 'all' ? TUTORIAL_TRACKS : TUTORIAL_TRACKS.filter(t => t.id === activeTrackFilter);
+        const container = document.getElementById('tutorials-container');
+
+        container.innerHTML = tracks.map(track => {
+          const done = track.steps.filter(s => completed[s.id]).length;
+          const pct = Math.round((done / track.steps.length) * 100);
+          return `
+            <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 flex flex-col justify-between space-y-4 shadow-sm">
+              <div class="space-y-3">
+                <div class="flex items-start justify-between gap-2">
+                  <div>
+                    <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-grid-50 dark:bg-grid-950 text-grid-700 dark:text-sky-300 border border-grid-100 dark:border-grid-900 mb-1.5">${track.badge}</span>
+                    <h3 class="text-base sm:text-lg font-extrabold">${track.name}</h3>
+                  </div>
+                  <span class="text-xs font-mono font-bold text-grid-600 dark:text-sky-400 shrink-0">${done}/${track.steps.length}</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                  <div class="h-full rounded-full bg-gradient-to-r from-grid-500 to-emerald-500 transition-all duration-300" style="width: ${pct}%"></div>
+                </div>
+                <div class="space-y-2.5 pt-1">
+                  ${track.steps.map(step => {
+                    const checked = Boolean(completed[step.id]);
+                    return `
+                      <label class="flex items-start gap-3 cursor-pointer p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-950/60 transition-colors">
+                        <input type="checkbox" data-step-id="${step.id}" ${checked ? 'checked' : ''}
+                               class="tutorial-cb mt-0.5 w-4 h-4 rounded border-slate-300 text-grid-600 focus:ring-grid-500 cursor-pointer" />
+                        <span class="text-xs sm:text-sm ${checked ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}">${step.title}</span>
+                      </label>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+              <div class="pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" data-open-lab="${track.labTarget}"
+                        class="track-lab-btn w-full inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-grid-50 hover:bg-grid-100 dark:bg-grid-950 dark:hover:bg-grid-900 text-grid-700 dark:text-sky-300 border border-grid-200 dark:border-grid-800 transition-colors">
+                  <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                  ${track.labLabel}
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.querySelectorAll('.tutorial-cb').forEach(cb => {
+          cb.addEventListener('change', () => {
+            const map = safeGetLocal(TUTORIAL_STORAGE_KEY, {});
+            map[cb.dataset.stepId] = cb.checked;
+            safeSetLocal(TUTORIAL_STORAGE_KEY, map);
+            renderTutorials();
+            showToast(cb.checked ? 'Module marked complete!' : 'Module unchecked');
+          });
+        });
+
+        container.querySelectorAll('.track-lab-btn').forEach(btn => {
+          btn.addEventListener('click', () => switchView('lab', btn.dataset.openLab));
+        });
+        renderIcons();
+      }
+
+      document.getElementById('reset-tutorial-progress-btn').addEventListener('click', () => {
+        try { localStorage.removeItem(TUTORIAL_STORAGE_KEY); } catch {}
+        renderTutorials();
+        showToast('Tutorial progress reset.');
+      });
+
+      /* ======================================================================
+         7. VIEW 3: INTERACTIVE LAB (4 CHART.JS SIMULATORS)
+      ====================================================================== */
+      let lccChart = null;
+      let idmtChart = null;
+      let hvdcPqChart = null;
+      let hvdcDcChart = null;
+      let mhoChart = null;
+
+      function getChartColors() {
+        const dark = isDarkMode();
+        return {
+          text: dark ? '#cbd5e1' : '#334155',
+          grid: dark ? 'rgba(148, 163, 184, 0.15)' : 'rgba(15, 23, 42, 0.08)'
+        };
+      }
+
+      function switchLabSubtab(tabName) {
+        currentLabTab = tabName;
+        document.querySelectorAll('.lab-panel').forEach(p => {
+          p.classList.toggle('hidden', p.id !== `lab-panel-${tabName}`);
+        });
+        document.querySelectorAll('.lab-subtab').forEach(btn => {
+          const active = btn.dataset.lab === tabName;
+          btn.classList.toggle('bg-white', active);
+          btn.classList.toggle('dark:bg-slate-800', active);
+          btn.classList.toggle('text-grid-700', active);
+          btn.classList.toggle('dark:text-sky-400', active);
+          btn.classList.toggle('shadow-sm', active);
+          btn.classList.toggle('text-slate-600', !active);
+          btn.classList.toggle('dark:text-slate-400', !active);
+        });
+        resizeActiveLabCharts();
+      }
+
+      document.querySelectorAll('.lab-subtab').forEach(btn => {
+        btn.addEventListener('click', () => switchLabSubtab(btn.dataset.lab));
+      });
+
+      function resizeActiveLabCharts() {
+        setTimeout(() => {
+          if (currentLabTab === 'lcc' && lccChart) { lccChart.resize(); lccChart.update('none'); }
+          if (currentLabTab === 'idmt' && idmtChart) { idmtChart.resize(); idmtChart.update('none'); }
+          if (currentLabTab === 'hvdc') {
+            if (hvdcPqChart) { hvdcPqChart.resize(); hvdcPqChart.update('none'); }
+            if (hvdcDcChart) { hvdcDcChart.resize(); hvdcDcChart.update('none'); }
+          }
+          if (currentLabTab === 'mho' && mhoChart) { mhoChart.resize(); mhoChart.update('none'); }
+        }, 40);
+      }
+
+      function updateAllChartsTheme() {
+        const c = getChartColors();
+        [lccChart, idmtChart, hvdcPqChart, hvdcDcChart, mhoChart].forEach(ch => {
+          if (!ch) return;
+          if (ch.options.plugins?.legend?.labels) ch.options.plugins.legend.labels.color = c.text;
+          Object.values(ch.options.scales || {}).forEach(sc => {
+            if (sc.ticks) sc.ticks.color = c.text;
+            if (sc.title) sc.title.color = c.text;
+            if (sc.grid) sc.grid.color = c.grid;
+          });
+          ch.update();
+        });
+      }
+
+      /* --- SIMULATOR 1: LCC-HVDC Vd-Id --- */
+      function intersectSegments(p1, p2, p3, p4) {
+        const denom = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x);
+        if (Math.abs(denom) < 1e-10) return null;
+        const t = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / denom;
+        const u = -((p1.x - p2.x) * (p1.y - p3.y) - (p1.y - p2.y) * (p1.x - p3.x)) / denom;
+        if (t >= -1e-6 && t <= 1 + 1e-6 && u >= -1e-6 && u <= 1 + 1e-6) {
+          return { x: p1.x + t * (p2.x - p1.x), y: p1.y + t * (p2.y - p1.y) };
+        }
+        return null;
+      }
+
+      function findPolylineIntersection(polyA, polyB) {
+        for (let i = 0; i < polyA.length - 1; i++) {
+          for (let j = 0; j < polyB.length - 1; j++) {
+            const pt = intersectSegments(polyA[i], polyA[i + 1], polyB[j], polyB[j + 1]);
+            if (pt) return { x: pt.x, y: pt.y, segA: i, segB: j };
+          }
+        }
+        return null;
+      }
+
+      function buildRectifierPolyline(vdoR, cosAmin, rcr, iOrd, vdcolOn) {
+        const vdHigh = 0.80, vdLow = 0.30, idMin = Math.min(iOrd, 0.30);
+        const ccCurve = vdcolOn
+          ? [{ x: iOrd, y: 1.6 }, { x: iOrd, y: vdHigh }, { x: idMin, y: vdLow }, { x: idMin, y: 0.0 }]
+          : [{ x: iOrd, y: 1.6 }, { x: iOrd, y: 0.0 }];
+        const ciaStart = { x: 0.0, y: vdoR * cosAmin };
+        const ciaEnd = { x: 1.5, y: vdoR * cosAmin - rcr * 1.5 };
+        const hit = findPolylineIntersection([ciaStart, ciaEnd], ccCurve);
+        const pts = [ciaStart];
+        if (hit) {
+          pts.push({ x: hit.x, y: hit.y });
+          for (let k = hit.segB + 1; k < ccCurve.length; k++) {
+            if (ccCurve[k].y < hit.y - 1e-5) pts.push(ccCurve[k]);
+          }
+        } else {
+          pts.push({ x: iOrd, y: Math.max(0, vdoR * cosAmin - rcr * iOrd) }, { x: iOrd, y: 0.0 });
+        }
+        return pts;
+      }
+
+      function buildInverterPolyline(vdoI, cosGmin, rci, rd, iOrd, deltaId, vdcolOn) {
+        const vdHigh = 0.80, vdLow = 0.30;
+        const iInvTop = Math.max(0.08, iOrd - deltaId);
+        const iInvMin = Math.max(0.05, Math.min(iInvTop, 0.30 - deltaId));
+        const invCc = vdcolOn
+          ? [{ x: iInvMin, y: 0.0 }, { x: iInvMin, y: vdLow }, { x: iInvTop, y: vdHigh }, { x: iInvTop, y: 1.6 }]
+          : [{ x: iInvTop, y: 0.0 }, { x: iInvTop, y: 1.6 }];
+        const ceaStart = { x: 0.0, y: vdoI * cosGmin };
+        const ceaEnd = { x: 1.45, y: vdoI * cosGmin + (rd - rci) * 1.45 };
+        const hit = findPolylineIntersection(invCc, [ceaStart, ceaEnd]);
+        const pts = [];
+        if (hit) {
+          for (let k = 0; k <= hit.segA; k++) {
+            if (invCc[k].y < hit.y - 1e-5) pts.push(invCc[k]);
+          }
+          pts.push({ x: hit.x, y: hit.y });
+          pts.push({ x: 1.45, y: Math.max(0, vdoI * cosGmin + (rd - rci) * 1.45) });
+        } else {
+          pts.push({ x: iInvTop, y: 0.0 }, { x: iInvTop, y: Math.max(0, vdoI * cosGmin + (rd - rci) * iInvTop) }, { x: 1.45, y: Math.max(0, vdoI * cosGmin + (rd - rci) * 1.45) });
+        }
+        return pts;
+      }
+
+      function updateLccSim() {
+        const ear = parseFloat(document.getElementById('lcc-ear').value);
+        const eai = parseFloat(document.getElementById('lcc-eai').value);
+        const aMin = parseFloat(document.getElementById('lcc-amin').value);
+        const gMin = parseFloat(document.getElementById('lcc-gmin').value);
+        const iOrd = parseFloat(document.getElementById('lcc-iord').value);
+        const dId = parseFloat(document.getElementById('lcc-did').value);
+        const xc = parseFloat(document.getElementById('lcc-xc').value);
+        const rd = parseFloat(document.getElementById('lcc-rd').value);
+        const vdcolOn = document.getElementById('lcc-vdcol-toggle').checked;
+
+        document.getElementById('lcc-ear-val').textContent = `${ear.toFixed(2)} pu`;
+        document.getElementById('lcc-eai-val').textContent = `${eai.toFixed(2)} pu`;
+        document.getElementById('lcc-amin-val').textContent = `${aMin}°`;
+        document.getElementById('lcc-gmin-val').textContent = `${gMin}°`;
+        document.getElementById('lcc-iord-val').textContent = `${iOrd.toFixed(2)} pu`;
+        document.getElementById('lcc-did-val').textContent = `${dId.toFixed(2)} pu`;
+        document.getElementById('lcc-xc-val').textContent = `${xc.toFixed(2)} pu`;
+        document.getElementById('lcc-rd-val').textContent = `${rd.toFixed(2)} pu`;
+
+        const vdoR = 1.15 * ear;
+        const vdoI = 1.15 * eai;
+        const rcr = 0.5 * xc;
+        const rci = 0.5 * xc;
+        const cosAmin = Math.cos((aMin * Math.PI) / 180);
+        const cosGmin = Math.cos((gMin * Math.PI) / 180);
+
+        const recPts = buildRectifierPolyline(vdoR, cosAmin, rcr, iOrd, vdcolOn);
+        const invPts = buildInverterPolyline(vdoI, cosGmin, rci, rd, iOrd, dId, vdcolOn);
+        const hit = findPolylineIntersection(recPts, invPts);
+
+        const idOp = hit ? Math.max(0.01, hit.x) : Math.max(0.05, iOrd - dId);
+        const vdOp = hit ? Math.max(0.0, hit.y) : Math.max(0.0, vdoR * cosAmin - rcr * idOp);
+        const pdOp = vdOp * idOp;
+
+        const cosAlpha = Math.min(1, Math.max(-1, (vdOp + rcr * idOp) / Math.max(0.01, vdoR)));
+        const alphaDeg = Math.max(aMin, (Math.acos(cosAlpha) * 180) / Math.PI);
+        const vdiOp = Math.max(0, vdOp - rd * idOp);
+        const cosGamma = Math.min(1, Math.max(-1, (vdiOp + rci * idOp) / Math.max(0.01, vdoI)));
+        const gammaDeg = Math.max(gMin, (Math.acos(cosGamma) * 180) / Math.PI);
+
+        const cosAlphaMu = Math.cos((alphaDeg * Math.PI) / 180) - (xc * idOp) / Math.max(0.01, vdoR);
+        const muR = cosAlphaMu <= -1 ? 60 : Math.max(0, (Math.acos(Math.min(1, cosAlphaMu)) * 180) / Math.PI - alphaDeg);
+        const cosGammaMu = Math.cos((gammaDeg * Math.PI) / 180) - (xc * idOp) / Math.max(0.01, vdoI);
+        const muI = cosGammaMu <= -1 ? 60 : Math.max(0, (Math.acos(Math.min(1, cosGammaMu)) * 180) / Math.PI - gammaDeg);
+
+        const pfR = Math.min(0.999, Math.max(0.05, vdOp / Math.max(0.01, vdoR)));
+        const qR = pdOp * Math.tan(Math.acos(pfR));
+        const pfI = Math.min(0.999, Math.max(0.05, vdiOp / Math.max(0.01, vdoI)));
+        const qI = (vdiOp * idOp) * Math.tan(Math.acos(pfI));
+
+        const vdcolActive = vdcolOn && vdOp < 0.799 && idOp < iOrd - 0.005;
+        const onRecCia = Math.abs(alphaDeg - aMin) < 0.35;
+        const onInvCea = Math.abs(gammaDeg - gMin) < 0.35;
+
+        let modeText = 'Rectifier CC / Inverter CEA';
+        let modeCls = 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300';
+        if (vdcolActive) {
+          modeText = onRecCia ? 'VDCOL + CIA / Inv CC' : 'VDCOL Active (Reduced Id)';
+          modeCls = 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300';
+        } else if (onRecCia && !onInvCea) {
+          modeText = 'Rectifier CIA / Inverter CC';
+          modeCls = 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300';
+        }
+
+        document.getElementById('lcc-vd-out').textContent = `${vdOp.toFixed(3)} pu`;
+        document.getElementById('lcc-id-out').textContent = `${idOp.toFixed(3)} pu`;
+        document.getElementById('lcc-pd-out').textContent = `${pdOp.toFixed(3)} pu`;
+        const badge = document.getElementById('lcc-mode-badge');
+        badge.textContent = modeText;
+        badge.className = `mt-1 inline-flex items-center justify-center px-2 py-1 rounded-lg text-[11px] font-bold text-center leading-tight ${modeCls}`;
+        document.getElementById('lcc-alpha-out').textContent = `${alphaDeg.toFixed(1)}°`;
+        document.getElementById('lcc-gamma-out').textContent = `${gammaDeg.toFixed(1)}°`;
+        document.getElementById('lcc-mu-out').textContent = `${muR.toFixed(1)}° / ${muI.toFixed(1)}°`;
+        document.getElementById('lcc-q-out').textContent = `${qR.toFixed(2)} / ${qI.toFixed(2)} pu`;
+
+        const warnBanner = document.getElementById('lcc-warning-banner');
+        const cfRisk = eai < 0.78 || muI > 26.0 || (gammaDeg <= 16.0 && muI > 20.0);
+        if (cfRisk) {
+          warnBanner.classList.remove('hidden');
+          document.getElementById('lcc-warning-text').innerHTML = `<strong>Commutation Failure Risk:</strong> Inverter AC voltage (E<sub>ai</sub>=${eai.toFixed(2)} pu) and overlap angle (μ<sub>i</sub>=${muI.toFixed(1)}°) narrow commutation margin at γ=${gammaDeg.toFixed(1)}°. ${vdcolOn ? 'VDCOL is actively throttling DC current.' : 'Enable VDCOL to limit DC current during recovery.'}`;
+        } else {
+          warnBanner.classList.add('hidden');
+        }
+
+        if (lccChart) {
+          lccChart.data.datasets[0].data = recPts;
+          lccChart.data.datasets[1].data = invPts;
+          lccChart.data.datasets[2].data = [{ x: idOp, y: vdOp }];
+          lccChart.data.datasets[3].data = [{ x: 0, y: vdOp }, { x: idOp, y: vdOp }, { x: idOp, y: 0 }];
+          lccChart.update('none');
+        }
+      }
+
+      function applyLccPreset(preset) {
+        const setVal = (id, val) => { document.getElementById(id).value = val; };
+        if (preset === 'normal') {
+          setVal('lcc-ear', 1.00); setVal('lcc-eai', 1.00); setVal('lcc-amin', 5); setVal('lcc-gmin', 18);
+          setVal('lcc-iord', 1.00); setVal('lcc-did', 0.10); setVal('lcc-xc', 0.14); setVal('lcc-rd', 0.03);
+          document.getElementById('lcc-vdcol-toggle').checked = true;
+        } else if (preset === 'inv-dip') {
+          setVal('lcc-ear', 1.00); setVal('lcc-eai', 0.75); setVal('lcc-amin', 5); setVal('lcc-gmin', 18);
+          setVal('lcc-iord', 1.00); setVal('lcc-did', 0.10); setVal('lcc-xc', 0.14); setVal('lcc-rd', 0.03);
+          document.getElementById('lcc-vdcol-toggle').checked = true;
+        } else if (preset === 'rect-dip') {
+          setVal('lcc-ear', 0.80); setVal('lcc-eai', 1.00); setVal('lcc-amin', 5); setVal('lcc-gmin', 18);
+          setVal('lcc-iord', 1.00); setVal('lcc-did', 0.10); setVal('lcc-xc', 0.14); setVal('lcc-rd', 0.03);
+          document.getElementById('lcc-vdcol-toggle').checked = true;
+        } else if (preset === 'severe-vdcol') {
+          setVal('lcc-ear', 0.65); setVal('lcc-eai', 0.55); setVal('lcc-amin', 5); setVal('lcc-gmin', 18);
+          setVal('lcc-iord', 1.00); setVal('lcc-did', 0.10); setVal('lcc-xc', 0.16); setVal('lcc-rd', 0.03);
+          document.getElementById('lcc-vdcol-toggle').checked = true;
+        }
+        updateLccSim();
+      }
+
+      /* --- SIMULATOR 2: IDMT OVERCURRENT TCC --- */
+      const IEC_CURVES = { SI: { k: 0.14, alpha: 0.02 }, VI: { k: 13.5, alpha: 1.0 }, EI: { k: 80.0, alpha: 2.0 }, LTI: { k: 120.0, alpha: 1.0 } };
+
+      function calcIdmt(iFault, ip, tms, inst, curveKey) {
+        if (iFault >= inst) return 0.05;
+        const { k, alpha } = IEC_CURVES[curveKey];
+        const psm = iFault / ip;
+        if (psm <= 1.02) return null;
+        return (tms * k) / (Math.pow(psm, alpha) - 1);
+      }
+
+      function updateIdmtSim() {
+        const curve = document.getElementById('idmt-curve-select').value;
+        const ip = parseFloat(document.getElementById('idmt-ip').value);
+        const tms1 = parseFloat(document.getElementById('idmt-tms1').value);
+        const tms2 = parseFloat(document.getElementById('idmt-tms2').value);
+        const inst = parseFloat(document.getElementById('idmt-inst').value);
+        const iFault = parseFloat(document.getElementById('idmt-if').value);
+
+        document.getElementById('idmt-ip-val').textContent = `${ip} A`;
+        document.getElementById('idmt-tms1-val').textContent = tms1.toFixed(2);
+        document.getElementById('idmt-tms2-val').textContent = tms2.toFixed(2);
+        document.getElementById('idmt-inst-val').textContent = `${inst} A`;
+        document.getElementById('idmt-if-val').textContent = `${iFault} A`;
+
+        const t1 = calcIdmt(iFault, ip, tms1, inst, curve);
+        const t2 = calcIdmt(iFault, ip, tms2, inst * 1.4, curve);
+        const badge = document.getElementById('idmt-status-badge');
+
+        if (t1 === null || t2 === null) {
+          document.getElementById('idmt-t1-out').textContent = 'No Trip';
+          document.getElementById('idmt-t2-out').textContent = 'No Trip';
+          document.getElementById('idmt-dt-out').textContent = '--';
+          badge.textContent = 'BELOW PICKUP';
+          badge.className = 'mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300';
+        } else {
+          const dt = t2 - t1;
+          document.getElementById('idmt-t1-out').textContent = `${t1.toFixed(3)} s`;
+          document.getElementById('idmt-t2-out').textContent = `${t2.toFixed(3)} s`;
+          document.getElementById('idmt-dt-out').textContent = `${dt >= 0 ? '+' : ''}${dt.toFixed(3)} s`;
+          if (dt >= 0.30) {
+            badge.textContent = 'PASS (Coordinated)';
+            badge.className = 'mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300';
+          } else {
+            badge.textContent = 'FAIL (< 0.30s)';
+            badge.className = 'mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300';
+          }
+        }
+
+        const priPts = [], bakPts = [];
+        const minI = ip * 1.15;
+        const maxI = Math.max(12000, iFault * 1.3);
+        for (let i = 0; i <= 70; i++) {
+          const curr = minI * Math.pow(maxI / minI, i / 70);
+          const tp = calcIdmt(curr, ip, tms1, inst, curve);
+          const tb = calcIdmt(curr, ip, tms2, inst * 1.4, curve);
+          if (tp && tp <= 100) priPts.push({ x: curr, y: tp });
+          if (tb && tb <= 100) bakPts.push({ x: curr, y: tb });
+        }
+        const faultPts = [];
+        if (t1 && t1 <= 100) faultPts.push({ x: iFault, y: t1 });
+        if (t2 && t2 <= 100) faultPts.push({ x: iFault, y: t2 });
+
+        if (idmtChart) {
+          idmtChart.data.datasets[0].data = priPts;
+          idmtChart.data.datasets[1].data = bakPts;
+          idmtChart.data.datasets[2].data = faultPts;
+          idmtChart.update('none');
+        }
+      }
+
+      /* --- SIMULATOR 3: VSC-HVDC P-Q & DC-LINK --- */
+      function updateHvdcSim() {
+        const P = parseFloat(document.getElementById('hvdc-p').value);
+        const Q = parseFloat(document.getElementById('hvdc-q').value);
+        const Vac = parseFloat(document.getElementById('hvdc-vac').value);
+        const Cdc = parseFloat(document.getElementById('hvdc-cdc').value);
+        const zeta = parseFloat(document.getElementById('hvdc-zeta').value);
+
+        document.getElementById('hvdc-p-val').textContent = `${P.toFixed(2)} pu`;
+        document.getElementById('hvdc-q-val').textContent = `${Q.toFixed(2)} pu`;
+        document.getElementById('hvdc-vac-val').textContent = `${Vac.toFixed(2)} pu`;
+        document.getElementById('hvdc-cdc-val').textContent = `${Cdc.toFixed(1)} mF`;
+        document.getElementById('hvdc-zeta-val').textContent = zeta.toFixed(2);
+
+        const Smax = Vac; // 1.0 pu Imax -> Smax = Vac
+        const S = Math.hypot(P, Q);
+        const pf = S > 0 ? Math.abs(P) / S : 1.0;
+
+        document.getElementById('hvdc-smax-out').textContent = `${Smax.toFixed(2)} pu`;
+        document.getElementById('hvdc-s-out').textContent = `${S.toFixed(3)} pu`;
+        document.getElementById('hvdc-pf-out').textContent = `${pf.toFixed(3)} ${Q >= 0 ? 'Lag' : 'Lead'}`;
+
+        const badge = document.getElementById('hvdc-status-badge');
+        const feasible = S <= Smax + 1e-4;
+        badge.textContent = feasible ? 'FEASIBLE' : 'LIMIT EXCEEDED';
+        badge.className = feasible
+          ? 'px-2 py-0.5 rounded-md font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
+          : 'px-2 py-0.5 rounded-md font-bold bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300';
+
+        const circlePts = [];
+        for (let deg = 0; deg <= 360; deg += 5) {
+          const rad = (deg * Math.PI) / 180;
+          circlePts.push({ x: Smax * Math.cos(rad), y: Smax * Math.sin(rad) });
+        }
+
+        if (hvdcPqChart) {
+          hvdcPqChart.data.datasets[0].data = circlePts;
+          hvdcPqChart.data.datasets[1].data = [{ x: 0, y: 0 }, { x: P, y: Q }];
+          hvdcPqChart.data.datasets[2].data = [{ x: P, y: Q }];
+          hvdcPqChart.data.datasets[2].backgroundColor = feasible ? '#10b981' : '#f43f5e';
+          hvdcPqChart.update('none');
+        }
+
+        const dcPts = [];
+        const cNorm = Cdc / 2.4;
+        const wn = (2 * Math.PI * 7.5) / Math.sqrt(cNorm);
+        const amp = (0.09 / Math.sqrt(cNorm)) * (P / Math.max(0.5, Vac));
+        for (let tMs = 0; tMs <= 500; tMs += 5) {
+          let vdc = 1.0;
+          if (tMs >= 50) {
+            const dt = (tMs - 50) / 1000.0;
+            if (zeta < 1.0) {
+              const wd = wn * Math.sqrt(1 - zeta * zeta);
+              vdc = 1.0 - amp * Math.exp(-zeta * wn * dt) * Math.sin(wd * dt);
+            } else {
+              vdc = 1.0 - amp * (wn * dt) * Math.exp(-wn * dt);
+            }
+          }
+          dcPts.push({ x: tMs, y: Number(vdc.toFixed(4)) });
+        }
+
+        if (hvdcDcChart) {
+          hvdcDcChart.data.datasets[0].data = dcPts;
+          hvdcDcChart.update('none');
+        }
+      }
+
+      /* --- SIMULATOR 4: 3-ZONE MHO DISTANCE RELAY --- */
+      function buildMhoCircle(zReach, angleRad) {
+        const cx = (zReach / 2) * Math.cos(angleRad);
+        const cy = (zReach / 2) * Math.sin(angleRad);
+        const r = zReach / 2;
+        const pts = [];
+        for (let deg = 0; deg <= 360; deg += 5) {
+          const rad = (deg * Math.PI) / 180;
+          pts.push({ x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) });
+        }
+        return { pts, cx, cy, r };
+      }
+
+      function updateMhoSim() {
+        const zL = parseFloat(document.getElementById('mho-zl').value);
+        const angleDeg = parseFloat(document.getElementById('mho-angle').value);
+        const z1Pct = parseFloat(document.getElementById('mho-z1').value);
+        const z2Pct = parseFloat(document.getElementById('mho-z2').value);
+        const z3Pct = parseFloat(document.getElementById('mho-z3').value);
+        const locPct = parseFloat(document.getElementById('mho-loc').value);
+        const rf = parseFloat(document.getElementById('mho-rf').value);
+
+        document.getElementById('mho-zl-val').textContent = `${zL.toFixed(1)} Ω`;
+        document.getElementById('mho-angle-val').textContent = `${angleDeg}°`;
+        document.getElementById('mho-z1-val').textContent = `${z1Pct}%`;
+        document.getElementById('mho-z2-val').textContent = `${z2Pct}%`;
+        document.getElementById('mho-z3-val').textContent = `${z3Pct}%`;
+        document.getElementById('mho-loc-val').textContent = `${locPct}%`;
+        document.getElementById('mho-rf-val').textContent = `${rf.toFixed(1)} Ω`;
+
+        const angleRad = (angleDeg * Math.PI) / 180;
+        const rLine = zL * Math.cos(angleRad);
+        const xLine = zL * Math.sin(angleRad);
+        const m = locPct / 100;
+        const rFault = m * rLine + rf;
+        const xFault = m * xLine;
+        const zMag = Math.hypot(rFault, xFault);
+        const zAng = (Math.atan2(xFault, rFault) * 180) / Math.PI;
+
+        const z1 = buildMhoCircle(zL * (z1Pct / 100), angleRad);
+        const z2 = buildMhoCircle(zL * (z2Pct / 100), angleRad);
+        const z3 = buildMhoCircle(zL * (z3Pct / 100), angleRad);
+
+        const inZ1 = Math.hypot(rFault - z1.cx, xFault - z1.cy) <= z1.r;
+        const inZ2 = Math.hypot(rFault - z2.cx, xFault - z2.cy) <= z2.r;
+        const inZ3 = Math.hypot(rFault - z3.cx, xFault - z3.cy) <= z3.r;
+
+        document.getElementById('mho-zf-out').textContent = `${zMag.toFixed(2)} Ω (${rFault.toFixed(1)} + j${xFault.toFixed(1)})`;
+        document.getElementById('mho-zang-out').textContent = `${zAng.toFixed(1)}°`;
+
+        const badge = document.getElementById('mho-trip-badge');
+        if (inZ1) {
+          badge.textContent = 'Zone 1 Instantaneous';
+          badge.className = 'mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300';
+        } else if (inZ2) {
+          badge.textContent = 'Zone 2 Delayed (0.35s)';
+          badge.className = 'mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300';
+        } else if (inZ3) {
+          badge.textContent = 'Zone 3 Backup (0.80s)';
+          badge.className = 'mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300';
+        } else {
+          badge.textContent = 'No Trip (Out of Zone)';
+          badge.className = 'mt-1 inline-flex items-center justify-center px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300';
+        }
+
+        if (mhoChart) {
+          const span = Math.max(50, zL * (z3Pct / 100) * 1.15, xFault * 1.15);
+          mhoChart.options.scales.y.max = Math.ceil(span / 10) * 10;
+          mhoChart.options.scales.x.min = -Math.ceil((span * 0.45) / 5) * 5;
+          mhoChart.options.scales.x.max = Math.ceil((span * 0.85) / 5) * 5;
+          mhoChart.data.datasets[0].data = z1.pts;
+          mhoChart.data.datasets[1].data = z2.pts;
+          mhoChart.data.datasets[2].data = z3.pts;
+          mhoChart.data.datasets[3].data = [{ x: 0, y: 0 }, { x: rLine, y: xLine }];
+          mhoChart.data.datasets[4].data = [{ x: rFault, y: xFault }];
+          mhoChart.update('none');
+        }
+      }
+
+      function initLabSimulators() {
+        if (typeof window.Chart === 'undefined') return;
+        const c = getChartColors();
+        [lccChart, idmtChart, hvdcPqChart, hvdcDcChart, mhoChart].forEach(ch => { if (ch) ch.destroy(); });
+
+        lccChart = new Chart(document.getElementById('chart-lcc').getContext('2d'), {
+          type: 'scatter',
+          data: {
+            datasets: [
+              { label: 'Rectifier (CIA / CC / VDCOL)', data: [], showLine: true, borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', pointRadius: 2.5, borderWidth: 3 },
+              { label: 'Inverter (CEA / CC / VDCOL)', data: [], showLine: true, borderColor: '#f59e0b', backgroundColor: '#f59e0b', pointRadius: 2.5, borderWidth: 3, borderDash: [7, 4] },
+              { label: 'Operating Point', data: [], showLine: false, backgroundColor: '#10b981', borderColor: '#ffffff', borderWidth: 2.5, pointRadius: 8 },
+              { label: 'Projections', data: [], showLine: true, borderColor: 'rgba(16,185,129,0.55)', pointRadius: 0, borderWidth: 1.5, borderDash: [4, 4] }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { min: 0, max: 1.45, title: { display: true, text: 'DC Current Id (p.u.)', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } },
+              y: { min: 0, max: 1.40, title: { display: true, text: 'DC Voltage Vd (p.u.)', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } }
+            },
+            plugins: {
+              legend: { labels: { color: c.text, usePointStyle: true, filter: item => item.text !== 'Projections' } }
+            }
+          }
+        });
+
+        idmtChart = new Chart(document.getElementById('chart-idmt').getContext('2d'), {
+          type: 'scatter',
+          data: {
+            datasets: [
+              { label: 'Relay 1 (Downstream)', data: [], showLine: true, borderColor: '#0ea5e9', backgroundColor: '#0ea5e9', pointRadius: 0, borderWidth: 2.5 },
+              { label: 'Relay 2 (Upstream)', data: [], showLine: true, borderColor: '#f59e0b', backgroundColor: '#f59e0b', pointRadius: 0, borderWidth: 2.5, borderDash: [6, 4] },
+              { label: 'Fault Points', data: [], showLine: true, borderColor: '#f43f5e', backgroundColor: '#f43f5e', pointRadius: 6, borderWidth: 2, borderDash: [3, 3] }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { type: 'logarithmic', title: { display: true, text: 'Fault Current (A) [Log]', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } },
+              y: { type: 'logarithmic', min: 0.04, max: 50, title: { display: true, text: 'Trip Time (s) [Log]', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } }
+            },
+            plugins: { legend: { labels: { color: c.text, usePointStyle: true } } }
+          }
+        });
+
+        hvdcPqChart = new Chart(document.getElementById('chart-hvdc-pq').getContext('2d'), {
+          type: 'scatter',
+          data: {
+            datasets: [
+              { label: 'Current Limit Circle', data: [], showLine: true, borderColor: '#0ea5e9', backgroundColor: 'rgba(14,165,233,0.08)', fill: true, pointRadius: 0, borderWidth: 2 },
+              { label: 'Power Vector', data: [], showLine: true, borderColor: '#6366f1', pointRadius: 0, borderWidth: 2, borderDash: [4, 4] },
+              { label: 'Operating Point (P*, Q*)', data: [], showLine: false, backgroundColor: '#10b981', borderColor: '#ffffff', borderWidth: 2, pointRadius: 7 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { min: -1.3, max: 1.3, title: { display: true, text: 'Active Power P (p.u.)', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } },
+              y: { min: -1.3, max: 1.3, title: { display: true, text: 'Reactive Power Q (p.u.)', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } }
+            },
+            plugins: { legend: { labels: { color: c.text, usePointStyle: true } } }
+          }
+        });
+
+        hvdcDcChart = new Chart(document.getElementById('chart-hvdc-dc').getContext('2d'), {
+          type: 'scatter',
+          data: {
+            datasets: [
+              { label: 'Vdc(t) (p.u.)', data: [], showLine: true, borderColor: '#f59e0b', pointRadius: 0, borderWidth: 2.5 },
+              { label: 'Nominal 1.0 pu', data: [{ x: 0, y: 1.0 }, { x: 500, y: 1.0 }], showLine: true, borderColor: '#64748b', pointRadius: 0, borderWidth: 1.2, borderDash: [5, 5] }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { min: 0, max: 500, title: { display: true, text: 'Time (ms) — Step at 50 ms', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } },
+              y: { min: 0.85, max: 1.15, title: { display: true, text: 'DC Voltage (p.u.)', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } }
+            },
+            plugins: { legend: { labels: { color: c.text, usePointStyle: true } } }
+          }
+        });
+
+        mhoChart = new Chart(document.getElementById('chart-mho').getContext('2d'), {
+          type: 'scatter',
+          data: {
+            datasets: [
+              { label: 'Zone 1 Mho', data: [], showLine: true, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.10)', fill: true, pointRadius: 0, borderWidth: 2.5 },
+              { label: 'Zone 2 Mho', data: [], showLine: true, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.06)', fill: true, pointRadius: 0, borderWidth: 2, borderDash: [6, 4] },
+              { label: 'Zone 3 Mho', data: [], showLine: true, borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.04)', fill: true, pointRadius: 0, borderWidth: 1.8, borderDash: [3, 3] },
+              { label: 'Line Z_L', data: [], showLine: true, borderColor: '#0ea5e9', pointRadius: 3, borderWidth: 3 },
+              { label: 'Fault Z_app', data: [], showLine: false, backgroundColor: '#f43f5e', borderColor: '#ffffff', borderWidth: 2, pointRadius: 8 }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: { min: -25, max: 45, title: { display: true, text: 'Resistance R (Ω)', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } },
+              y: { min: -5, max: 60, title: { display: true, text: 'Reactance X (Ω)', color: c.text }, ticks: { color: c.text }, grid: { color: c.grid } }
+            },
+            plugins: { legend: { labels: { color: c.text, usePointStyle: true } } }
+          }
+        });
+
+        // Wire simulator listeners
+        ['lcc-ear', 'lcc-eai', 'lcc-amin', 'lcc-gmin', 'lcc-iord', 'lcc-did', 'lcc-xc', 'lcc-rd', 'lcc-vdcol-toggle'].forEach(id => {
+          const el = document.getElementById(id);
+          el.addEventListener('input', updateLccSim);
+          el.addEventListener('change', updateLccSim);
+        });
+        document.getElementById('lcc-reset-btn').addEventListener('click', () => applyLccPreset('normal'));
+        document.querySelectorAll('.lcc-preset').forEach(btn => btn.addEventListener('click', () => applyLccPreset(btn.dataset.preset)));
+
+        ['idmt-curve-select', 'idmt-ip', 'idmt-tms1', 'idmt-tms2', 'idmt-inst', 'idmt-if'].forEach(id => {
+          document.getElementById(id).addEventListener('input', updateIdmtSim);
+        });
+        document.getElementById('idmt-reset-btn').addEventListener('click', () => {
+          document.getElementById('idmt-curve-select').value = 'SI';
+          document.getElementById('idmt-ip').value = 200;
+          document.getElementById('idmt-tms1').value = 0.20;
+          document.getElementById('idmt-tms2').value = 0.45;
+          document.getElementById('idmt-inst').value = 6000;
+          document.getElementById('idmt-if').value = 2400;
+          updateIdmtSim();
+        });
+        document.querySelectorAll('.idmt-preset').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const p = btn.dataset.preset;
+            if (p === 'feeder') {
+              document.getElementById('idmt-curve-select').value = 'SI';
+              document.getElementById('idmt-ip').value = 200;
+              document.getElementById('idmt-tms1').value = 0.20;
+              document.getElementById('idmt-tms2').value = 0.45;
+              document.getElementById('idmt-if').value = 2400;
+            } else if (p === 'transformer') {
+              document.getElementById('idmt-curve-select').value = 'VI';
+              document.getElementById('idmt-ip').value = 400;
+              document.getElementById('idmt-tms1').value = 0.25;
+              document.getElementById('idmt-tms2').value = 0.60;
+              document.getElementById('idmt-if').value = 4800;
+            } else {
+              document.getElementById('idmt-curve-select').value = 'EI';
+              document.getElementById('idmt-ip').value = 250;
+              document.getElementById('idmt-tms1').value = 0.30;
+              document.getElementById('idmt-tms2').value = 0.40;
+              document.getElementById('idmt-if').value = 3500;
+            }
+            updateIdmtSim();
+          });
+        });
+
+        ['hvdc-p', 'hvdc-q', 'hvdc-vac', 'hvdc-cdc', 'hvdc-zeta'].forEach(id => {
+          document.getElementById(id).addEventListener('input', updateHvdcSim);
+        });
+        document.getElementById('hvdc-reset-btn').addEventListener('click', () => {
+          document.getElementById('hvdc-p').value = 0.75;
+          document.getElementById('hvdc-q').value = 0.30;
+          document.getElementById('hvdc-vac').value = 1.00;
+          document.getElementById('hvdc-cdc').value = 2.4;
+          document.getElementById('hvdc-zeta').value = 0.55;
+          updateHvdcSim();
+        });
+        document.querySelectorAll('.hvdc-preset').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const p = btn.dataset.preset;
+            if (p === 'wind') {
+              document.getElementById('hvdc-p').value = 0.90;
+              document.getElementById('hvdc-q').value = 0.20;
+              document.getElementById('hvdc-vac').value = 1.02;
+              document.getElementById('hvdc-cdc').value = 3.2;
+              document.getElementById('hvdc-zeta').value = 0.65;
+            } else if (p === 'lowcap') {
+              document.getElementById('hvdc-p').value = 0.80;
+              document.getElementById('hvdc-q').value = 0.15;
+              document.getElementById('hvdc-vac').value = 1.00;
+              document.getElementById('hvdc-cdc').value = 1.0;
+              document.getElementById('hvdc-zeta').value = 0.30;
+            } else {
+              document.getElementById('hvdc-p').value = 0.80;
+              document.getElementById('hvdc-q').value = 0.40;
+              document.getElementById('hvdc-vac').value = 0.85;
+              document.getElementById('hvdc-cdc').value = 2.4;
+              document.getElementById('hvdc-zeta').value = 0.50;
+            }
+            updateHvdcSim();
+          });
+        });
+
+        ['mho-zl', 'mho-angle', 'mho-z1', 'mho-z2', 'mho-z3', 'mho-loc', 'mho-rf'].forEach(id => {
+          document.getElementById(id).addEventListener('input', updateMhoSim);
+        });
+        document.getElementById('mho-reset-btn').addEventListener('click', () => {
+          document.getElementById('mho-zl').value = 20;
+          document.getElementById('mho-angle').value = 75;
+          document.getElementById('mho-z1').value = 80;
+          document.getElementById('mho-z2').value = 120;
+          document.getElementById('mho-z3').value = 220;
+          document.getElementById('mho-loc').value = 60;
+          document.getElementById('mho-rf').value = 2.5;
+          updateMhoSim();
+        });
+        document.querySelectorAll('.mho-preset').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const p = btn.dataset.preset;
+            if (p === 'bolted') {
+              document.getElementById('mho-loc').value = 50;
+              document.getElementById('mho-rf').value = 0.5;
+            } else if (p === 'arc') {
+              document.getElementById('mho-loc').value = 65;
+              document.getElementById('mho-rf').value = 12.0;
+            } else {
+              document.getElementById('mho-loc').value = 165;
+              document.getElementById('mho-rf').value = 2.0;
+            }
+            updateMhoSim();
+          });
+        });
+
+        updateLccSim();
+        updateIdmtSim();
+        updateHvdcSim();
+        updateMhoSim();
+        switchLabSubtab(currentLabTab);
+      }
+
+      /* ======================================================================
+         8. VIEW 4: OSS TOOLS MATRIX
+      ====================================================================== */
+      const TOOL_DOMAINS = ['All', 'Power Flow & OPF', 'EMT & Dynamic', 'Protection & Control', 'Julia / Modelica'];
+      let activeToolDomain = 'All';
+
+      function renderToolDomainPills() {
+        const container = document.getElementById('tools-category-pills');
+        container.innerHTML = TOOL_DOMAINS.map(dom => {
+          const active = dom === activeToolDomain;
+          const cls = active
+            ? 'bg-grid-600 text-white border-grid-600 shadow-sm'
+            : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700';
+          return `<button type="button" data-dom="${dom}" class="tool-dom-pill px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${cls}">${dom}</button>`;
+        }).join('');
+
+        container.querySelectorAll('.tool-dom-pill').forEach(btn => {
+          btn.addEventListener('click', () => {
+            activeToolDomain = btn.dataset.dom;
+            renderToolDomainPills();
+            renderOssTools();
+          });
+        });
+      }
+
+      function renderOssTools() {
+        const q = document.getElementById('tools-search-input').value.trim().toLowerCase();
+        const filtered = OSS_TOOLS.filter(t => {
+          const matchDom = activeToolDomain === 'All' || t.domain === activeToolDomain;
+          const matchQ = !q ||
+            t.name.toLowerCase().includes(q) ||
+            t.language.toLowerCase().includes(q) ||
+            t.license.toLowerCase().includes(q) ||
+            t.strengths.toLowerCase().includes(q);
+          return matchDom && matchQ;
+        });
+
+        const tbody = document.getElementById('tools-table-body');
+        const cards = document.getElementById('tools-cards-grid');
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-slate-500">No open-source tools match your filter.</td></tr>`;
+          cards.innerHTML = `<div class="py-10 text-center text-sm text-slate-500 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">No open-source tools match your filter.</div>`;
+          return;
+        }
+
+        tbody.innerHTML = filtered.map(tool => `
+          <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors">
+            <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white whitespace-nowrap">${tool.name}</td>
+            <td class="py-3.5 px-4 whitespace-nowrap"><span class="px-2 py-0.5 rounded-md font-mono text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">${tool.language}</span></td>
+            <td class="py-3.5 px-4 whitespace-nowrap"><span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-grid-50 dark:bg-grid-950 text-grid-700 dark:text-sky-300 border border-grid-100 dark:border-grid-900">${tool.domain}</span></td>
+            <td class="py-3.5 px-4 font-mono text-xs text-slate-500 whitespace-nowrap">${tool.license}</td>
+            <td class="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-400 max-w-sm">${tool.strengths}</td>
+            <td class="py-3.5 px-4 whitespace-nowrap">
+              <a href="${tool.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-semibold text-grid-600 dark:text-sky-400 hover:underline">
+                Docs <i data-lucide="external-link" class="w-3 h-3"></i>
+              </a>
+            </td>
+          </tr>
+        `).join('');
+
+        cards.innerHTML = filtered.map(tool => `
+          <div class="bg-white dark:bg-slate-900/80 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 space-y-2.5 shadow-sm">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <h3 class="font-bold text-base">${tool.name}</h3>
+                <span class="text-xs font-mono text-slate-500">${tool.language} &bull; ${tool.license}</span>
+              </div>
+              <span class="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-grid-50 dark:bg-grid-950 text-grid-700 dark:text-sky-300">${tool.domain}</span>
+            </div>
+            <p class="text-xs text-slate-600 dark:text-slate-400">${tool.strengths}</p>
+            <a href="${tool.url}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-semibold text-grid-600 dark:text-sky-400 hover:underline">
+              Official Documentation <i data-lucide="external-link" class="w-3 h-3"></i>
+            </a>
+          </div>
+        `).join('');
+        renderIcons();
+      }
+
+      document.getElementById('tools-search-input').addEventListener('input', renderOssTools);
+
+      /* ======================================================================
+         9. VIEW 5: CONTACT & FEEDBACK
+      ====================================================================== */
+      function renderSubmissions() {
+        const list = document.getElementById('recent-submissions-list');
+        if (!feedbackSubmissions.length) {
+          list.innerHTML = `<p class="text-xs text-slate-500 italic">No feedback submitted yet.</p>`;
+          return;
+        }
+        list.innerHTML = feedbackSubmissions.map(item => `
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs font-bold">${escapeHtml(item.name)} <span class="font-normal text-slate-500">(${escapeHtml(item.email)})</span></span>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-semibold bg-grid-100 dark:bg-grid-950 text-grid-700 dark:text-sky-300">${escapeHtml(item.topic)}</span>
+            </div>
+            <p class="text-xs text-slate-600 dark:text-slate-400">${escapeHtml(item.message)}</p>
+            <div class="text-[10px] font-mono text-slate-400">${escapeHtml(item.timestamp)}</div>
+          </div>
+        `).join('');
+      }
+
+      document.getElementById('contact-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = document.getElementById('contact-name').value.trim();
+        const email = document.getElementById('contact-email').value.trim();
+        const topic = document.getElementById('contact-topic').value;
+        const message = document.getElementById('contact-message').value.trim();
+        const errBox = document.getElementById('contact-error-msg');
+        const okBanner = document.getElementById('contact-success-banner');
+
+        if (!name || !email || !message) {
+          errBox.textContent = 'Please complete Name, Email, and Message.';
+          errBox.classList.remove('hidden');
+          okBanner.classList.add('hidden');
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          errBox.textContent = 'Please enter a valid email address.';
+          errBox.classList.remove('hidden');
+          okBanner.classList.add('hidden');
+          return;
+        }
+
+        errBox.classList.add('hidden');
+        try {
+          await saveFeedbackSubmission({
+            name, email, topic, message,
+            timestamp: new Date().toLocaleString(),
+            createdAt: Date.now()
+          });
+          e.target.reset();
+          okBanner.classList.remove('hidden');
+          showToast('Feedback submitted successfully!');
+        } catch (err) {
+          errBox.textContent = `Could not submit feedback: ${err.message}`;
+          errBox.classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('clear-submissions-btn').addEventListener('click', () => {
+        feedbackSubmissions = [];
+        try { localStorage.removeItem(LOCAL_FEEDBACK_KEY); } catch {}
+        renderSubmissions();
+        showToast('Local submissions cleared.');
+      });
+
+      /* ======================================================================
+         10. ADMIN-ONLY AUTHOR PORTAL & AUTHOR STUDIO
+      ====================================================================== */
+      function updateAuthorUiState() {
+        const headerCtrl = document.getElementById('header-author-controls');
+        const mobileCtrl = document.getElementById('mobile-author-controls');
+        if (isAuthorUnlocked) {
+          headerCtrl.classList.remove('hidden');
+          headerCtrl.classList.add('flex');
+          mobileCtrl.classList.remove('hidden');
+          if (adminConfig?.authorName) {
+            document.getElementById('studio-author-greeting').textContent =
+              `Signed in as ${adminConfig.authorName}${adminConfig.authorEmail ? ' (' + adminConfig.authorEmail + ')' : ''}. Publish articles live or manage posts.`;
+          }
+        } else {
+          headerCtrl.classList.add('hidden');
+          headerCtrl.classList.remove('flex');
+          mobileCtrl.classList.add('hidden');
+          if (currentView === 'studio') switchView('articles');
+        }
+      }
+
+      function unlockAuthorMode() {
+        isAuthorUnlocked = true;
+        closeAuthorPortalModal();
+        updateAuthorUiState();
+        renderStudioArticlesList();
+        switchView('studio');
+        showToast('Author Studio unlocked.');
+      }
+
+      function lockAuthorMode() {
+        isAuthorUnlocked = false;
+        updateAuthorUiState();
+        switchView('articles');
+        showToast('Author Mode locked.');
+      }
+
+      function openAuthorPortalModal() {
+        if (isAuthorUnlocked) {
+          switchView('studio');
+          return;
+        }
+        const modal = document.getElementById('author-portal-modal');
+        const setupForm = document.getElementById('portal-setup-form');
+        const signinForm = document.getElementById('portal-signin-form');
+
+        document.getElementById('portal-setup-error').classList.add('hidden');
+        document.getElementById('portal-signin-error').classList.add('hidden');
+
+        if (!adminConfig || !adminConfig.passcodeHash) {
+          document.getElementById('portal-modal-title').textContent = 'Claim Admin Access';
+          setupForm.reset();
+          setupForm.classList.remove('hidden');
+          signinForm.classList.add('hidden');
+        } else {
+          document.getElementById('portal-modal-title').textContent = 'Unlock Author Studio';
+          signinForm.reset();
+          signinForm.classList.remove('hidden');
+          setupForm.classList.add('hidden');
+        }
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        renderIcons();
+      }
+
+      function closeAuthorPortalModal() {
+        const modal = document.getElementById('author-portal-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      document.getElementById('portal-setup-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const name = document.getElementById('setup-author-name').value.trim();
+        const email = document.getElementById('setup-author-email').value.trim();
+        const pass = document.getElementById('setup-passcode').value;
+        const confirmPass = document.getElementById('setup-passcode-confirm').value;
+        const errBox = document.getElementById('portal-setup-error');
+
+        if (!name || pass.length < 6) {
+          errBox.textContent = 'Enter your Author Name and a passcode of at least 6 characters.';
+          errBox.classList.remove('hidden');
+          return;
+        }
+        if (pass !== confirmPass) {
+          errBox.textContent = 'Passcodes do not match.';
+          errBox.classList.remove('hidden');
+          return;
+        }
+        try {
+          const passcodeHash = await sha256Hex(pass);
+          await saveAdminConfig({
+            authorName: name,
+            authorEmail: email,
+            passcodeHash,
+            adminUid: currentUser?.uid || 'local-admin',
+            createdAt: Date.now()
+          });
+          errBox.classList.add('hidden');
+          unlockAuthorMode();
+        } catch (err) {
+          errBox.textContent = `Setup failed: ${err.message}`;
+          errBox.classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('portal-signin-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!adminConfig) return;
+        const entered = document.getElementById('signin-passcode').value;
+        const errBox = document.getElementById('portal-signin-error');
+        const enteredHash = await sha256Hex(entered);
+        if (enteredHash === adminConfig.passcodeHash) {
+          errBox.classList.add('hidden');
+          unlockAuthorMode();
+        } else {
+          errBox.textContent = 'Incorrect Author Passcode.';
+          errBox.classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('footer-author-portal-btn').addEventListener('click', openAuthorPortalModal);
+      document.getElementById('close-portal-modal').addEventListener('click', closeAuthorPortalModal);
+      document.getElementById('author-portal-modal').addEventListener('click', e => {
+        if (e.target.id === 'author-portal-modal') closeAuthorPortalModal();
+      });
+      document.getElementById('header-studio-btn').addEventListener('click', () => switchView('studio'));
+      document.getElementById('mobile-studio-btn').addEventListener('click', () => switchView('studio'));
+      document.getElementById('header-lock-btn').addEventListener('click', lockAuthorMode);
+      document.getElementById('mobile-lock-btn').addEventListener('click', lockAuthorMode);
+      document.getElementById('studio-lock-btn').addEventListener('click', lockAuthorMode);
+      document.getElementById('studio-view-public-btn').addEventListener('click', () => switchView('articles'));
+
+      // Formatting Toolbar & Live Preview
+      let studioPreviewOn = false;
+      const contentTa = document.getElementById('studio-content');
+      const previewDiv = document.getElementById('studio-live-preview');
+
+      contentTa.addEventListener('input', () => {
+        document.getElementById('studio-readtime').value = estimateReadTime(contentTa.value);
+        if (studioPreviewOn) previewDiv.innerHTML = renderRichArticleHtml(contentTa.value);
+      });
+
+      document.querySelectorAll('.studio-fmt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const fmt = btn.dataset.fmt;
+          const s = contentTa.selectionStart;
+          const e = contentTa.selectionEnd;
+          const sel = contentTa.value.slice(s, e) || 'text';
+          let ins = sel;
+          if (fmt === 'bold') ins = `**${sel}**`;
+          else if (fmt === 'heading') ins = `\n## ${sel}\n`;
+          else if (fmt === 'list') ins = `\n- ${sel}\n- Next point`;
+          else if (fmt === 'code') ins = `\`${sel}\``;
+          contentTa.setRangeText(ins, s, e, 'end');
+          contentTa.focus();
+          contentTa.dispatchEvent(new Event('input'));
+        });
+      });
+
+      document.getElementById('studio-preview-toggle').addEventListener('click', () => {
+        studioPreviewOn = !studioPreviewOn;
+        const btn = document.getElementById('studio-preview-toggle');
+        if (studioPreviewOn) {
+          previewDiv.innerHTML = renderRichArticleHtml(contentTa.value);
+          contentTa.classList.add('hidden');
+          previewDiv.classList.remove('hidden');
+          btn.innerHTML = `<i data-lucide="edit-3" class="w-3 h-3"></i> Edit Text`;
+        } else {
+          previewDiv.classList.add('hidden');
+          contentTa.classList.remove('hidden');
+          btn.innerHTML = `<i data-lucide="eye" class="w-3 h-3"></i> Live Preview`;
+        }
+        renderIcons();
+      });
+
+      function resetStudioForm() {
+        document.getElementById('studio-article-form').reset();
+        document.getElementById('studio-edit-id').value = '';
+        document.getElementById('studio-readtime').value = '4 min read';
+        document.getElementById('studio-form-heading').innerHTML = `<i data-lucide="file-plus-2" class="w-5 h-5 text-emerald-500"></i> Write New Article`;
+        document.getElementById('studio-publish-btn-text').textContent = 'Publish Live';
+        document.getElementById('studio-cancel-edit-btn').classList.add('hidden');
+        document.getElementById('studio-form-error').classList.add('hidden');
+        if (studioPreviewOn) document.getElementById('studio-preview-toggle').click();
+        renderIcons();
+      }
+
+      document.getElementById('studio-clear-form-btn').addEventListener('click', resetStudioForm);
+      document.getElementById('studio-cancel-edit-btn').addEventListener('click', resetStudioForm);
+
+      document.getElementById('studio-article-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!isAuthorUnlocked) return;
+        const editId = document.getElementById('studio-edit-id').value.trim();
+        const title = document.getElementById('studio-title').value.trim();
+        const category = document.getElementById('studio-category').value;
+        const readTime = document.getElementById('studio-readtime').value.trim() || estimateReadTime(contentTa.value);
+        const standard = document.getElementById('studio-standard').value.trim();
+        const summary = document.getElementById('studio-summary').value.trim();
+        const content = contentTa.value.trim();
+        const codeTitle = document.getElementById('studio-code-title').value.trim();
+        const code = document.getElementById('studio-code').value;
+        const errBox = document.getElementById('studio-form-error');
+
+        if (!title || !summary || !content) {
+          errBox.textContent = 'Please fill in Title, Executive Summary, and Article Body.';
+          errBox.classList.remove('hidden');
+          return;
+        }
+        errBox.classList.add('hidden');
+
+        try {
+          const payload = {
+            title, category, readTime, standard, summary, content, codeTitle, code,
+            author: adminConfig?.authorName || 'Admin',
+            date: getCurrentMonthYear(),
+            updatedAt: Date.now()
+          };
+          if (!editId) payload.createdAt = Date.now();
+          await savePublishedArticle(payload, editId);
+          resetStudioForm();
+          showToast(editId ? 'Article updated live!' : 'Article published live!');
+        } catch (err) {
+          errBox.textContent = `Publish failed: ${err.message}`;
+          errBox.classList.remove('hidden');
+        }
+      });
+
+      function renderStudioArticlesList() {
+        const listEl = document.getElementById('studio-articles-list');
+        const countEl = document.getElementById('studio-published-count');
+        countEl.textContent = `${publishedArticles.length} live`;
+
+        if (!publishedArticles.length) {
+          listEl.innerHTML = `<p class="text-xs text-slate-500 italic py-4 text-center">No published articles yet. Write your first article on the left.</p>`;
+          return;
+        }
+
+        listEl.innerHTML = publishedArticles.map(art => `
+          <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2">
+            <div class="text-xs font-bold text-slate-900 dark:text-white leading-snug">${escapeHtml(art.title)}</div>
+            <div class="text-[11px] font-mono text-slate-500">${escapeHtml(art.category)} &bull; ${escapeHtml(art.date || '')} &bull; ${escapeHtml(art.readTime || '')}</div>
+            <div class="flex flex-wrap items-center gap-1.5 pt-1">
+              <button type="button" data-studio-edit="${escapeHtml(art.id)}"
+                      class="studio-edit-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-grid-50 hover:bg-grid-100 dark:bg-grid-950 dark:hover:bg-grid-900 text-grid-700 dark:text-sky-300 transition-colors">
+                <i data-lucide="edit-2" class="w-3 h-3"></i> Edit
+              </button>
+              <button type="button" data-studio-del="${escapeHtml(art.id)}"
+                      class="studio-del-btn inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 transition-colors">
+                <i data-lucide="trash-2" class="w-3 h-3"></i> Delete
+              </button>
+            </div>
+          </div>
+        `).join('');
+
+        listEl.querySelectorAll('.studio-edit-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const art = publishedArticles.find(a => a.id === btn.dataset.studioEdit);
+            if (!art) return;
+            document.getElementById('studio-edit-id').value = art.id;
+            document.getElementById('studio-title').value = art.title || '';
+            document.getElementById('studio-category').value = art.category || 'HVDC';
+            document.getElementById('studio-readtime').value = art.readTime || '';
+            document.getElementById('studio-standard').value = art.standard || '';
+            document.getElementById('studio-summary').value = art.summary || '';
+            contentTa.value = art.content || '';
+            document.getElementById('studio-code-title').value = art.codeTitle || '';
+            document.getElementById('studio-code').value = art.code || '';
+            document.getElementById('studio-form-heading').innerHTML = `<i data-lucide="edit-3" class="w-5 h-5 text-grid-500"></i> Editing Article`;
+            document.getElementById('studio-publish-btn-text').textContent = 'Update Live Article';
+            document.getElementById('studio-cancel-edit-btn').classList.remove('hidden');
+            if (studioPreviewOn) previewDiv.innerHTML = renderRichArticleHtml(contentTa.value);
+            renderIcons();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        });
+
+        listEl.querySelectorAll('.studio-del-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const art = publishedArticles.find(a => a.id === btn.dataset.studioDel);
+            if (!art) return;
+            pendingDeleteArticleId = art.id;
+            document.getElementById('delete-confirm-text').textContent = `Permanently delete "${art.title}" from the public feed?`;
+            const modal = document.getElementById('delete-confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+          });
+        });
+        renderIcons();
+      }
+
+      document.getElementById('studio-export-all-btn').addEventListener('click', () => {
+        copyToClipboard(JSON.stringify(publishedArticles, null, 2), 'All published articles copied as JSON backup!');
+      });
+
+      function closeDeleteConfirmModal() {
+        pendingDeleteArticleId = null;
+        const modal = document.getElementById('delete-confirm-modal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      document.getElementById('delete-cancel-btn').addEventListener('click', closeDeleteConfirmModal);
+      document.getElementById('delete-confirm-modal').addEventListener('click', e => {
+        if (e.target.id === 'delete-confirm-modal') closeDeleteConfirmModal();
+      });
+      document.getElementById('delete-confirm-btn').addEventListener('click', async () => {
+        if (!pendingDeleteArticleId || !isAuthorUnlocked) return;
+        const targetId = pendingDeleteArticleId;
+        closeDeleteConfirmModal();
+        try {
+          await removePublishedArticle(targetId);
+          if (document.getElementById('studio-edit-id').value === targetId) resetStudioForm();
+          showToast('Published article deleted.');
+        } catch (err) {
+          showToast(`Delete failed: ${err.message}`);
+        }
+      });
+
+      document.getElementById('studio-passcode-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        if (!isAuthorUnlocked || !adminConfig) return;
+        const curPass = document.getElementById('studio-cur-passcode').value;
+        const newPass = document.getElementById('studio-new-passcode').value;
+        const msgBox = document.getElementById('studio-passcode-msg');
+
+        const curHash = await sha256Hex(curPass);
+        if (curHash !== adminConfig.passcodeHash) {
+          msgBox.textContent = 'Current passcode is incorrect.';
+          msgBox.className = 'text-xs font-medium rounded-lg px-3 py-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900';
+          return;
+        }
+        if (newPass.length < 6) {
+          msgBox.textContent = 'New passcode must be at least 6 characters.';
+          msgBox.className = 'text-xs font-medium rounded-lg px-3 py-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900';
+          return;
+        }
+        try {
+          const newHash = await sha256Hex(newPass);
+          await saveAdminConfig({ ...adminConfig, passcodeHash: newHash, updatedAt: Date.now() });
+          e.target.reset();
+          msgBox.textContent = 'Author Passcode updated successfully.';
+          msgBox.className = 'text-xs font-medium rounded-lg px-3 py-2 text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800';
+          showToast('Author Passcode updated.');
+        } catch (err) {
+          msgBox.textContent = `Update failed: ${err.message}`;
+          msgBox.className = 'text-xs font-medium rounded-lg px-3 py-2 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900';
+        }
+      });
+
+      // Global Keyboard Shortcuts (Escape to close modals, Ctrl/Cmd+Shift+A for Author Portal)
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          closeArticleModal();
+          closeAuthorPortalModal();
+          closeDeleteConfirmModal();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+          e.preventDefault();
+          if (isAuthorUnlocked) switchView('studio');
+          else openAuthorPortalModal();
+        }
+      });
+
+      /* ======================================================================
+         11. INITIAL BOOTSTRAP
+      ====================================================================== */
+      renderArticleCategoryPills();
+      renderArticles();
+      renderTutorialTabs();
+      renderTutorials();
+      renderToolDomainPills();
+      renderOssTools();
+      renderSubmissions();
+      renderStudioArticlesList();
+      switchView('articles');
+      renderIcons();
+      initFirebaseSafely();
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initGridPulseApp);
+    } else {
+      initGridPulseApp();
+    }
+  </script>
+</body>
+</html>

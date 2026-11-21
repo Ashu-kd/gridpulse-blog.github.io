@@ -1,0 +1,45 @@
+# Sveltia CMS configuration — https://github.com/sveltia/sveltia-cms
+# Sign in with "Sign In with Token" using a GitHub fine-grained personal access token
+# (Repository access: only this repo · Permissions: Contents → Read and write). See PUBLISHING.md.
+
+backend:
+  name: github
+  repo: Ashu-kd/gridpulse-blog.github.io   # ← <user>/<repository> that GitHub Pages publishes
+  branch: main                       # ← the branch GitHub Pages publishes from
+
+site_url: https://ashu-kd.github.io/gridpulse-blog.github.io
+display_url: https://ashu-kd.github.io/gridpulse-blog.github.io
+
+media_folder: assets/img/articles    # images you upload are committed here
+public_folder: /gridpulse-blog.github.io/assets/img/articles  # …and referenced like this (site lives under /gridpulse-blog.github.io/)
+
+collections:
+  - name: articles
+    label: Articles
+    label_singular: Article
+    description: Technical articles published at /articles/YYYY/MM/slug/ and listed on the home page.
+    folder: _posts
+    create: true
+    delete: true
+    extension: md
+    format: frontmatter
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    summary: "{{title}} · {{topic}} · {{year}}-{{month}}-{{day}}"
+    sortable_fields: [date, title, topic]
+    fields:
+      - { label: Title, name: title, widget: string }
+      - { label: Publish date, name: date, widget: datetime, format: "YYYY-MM-DD HH:mm:ss ZZ", hint: "Future dates are published on the next site build after that date." }
+      - label: Topic
+        name: topic
+        widget: select
+        default: HVDC
+        options: [HVDC, Protection, Grid Modeling, Open Source, Industry News]
+      - { label: Summary, name: description, widget: text, hint: "1–2 sentences. Shown on the article card, in search engines and in X/LinkedIn previews." }
+      - { label: Standard / reference tag, name: standard, widget: string, required: false, hint: "e.g. IEC 60919-1 · CIGRE TB 754" }
+      - { label: Tags, name: tags, widget: list, required: false }
+      - { label: Cover image, name: image, widget: image, required: false }
+      - { label: Published, name: published, widget: boolean, default: true, hint: "Switch off to keep the article as a draft (it stays in the repo but is not built)." }
+      - label: Body
+        name: body
+        widget: markdown
+        hint: "Equations: $$V_d = V_{do}\\cos\\alpha$$ (inline) or $$…$$ on its own lines (display). Live simulator: paste the line copied with the </> button in the Controller Lab, e.g. {% include sim.html module=\"pole\" %}"

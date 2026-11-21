@@ -1,0 +1,16 @@
+{%- comment -%}
+  Embed a live HVDC Controller Lab module inside an article.
+  Usage in a Markdown post (curly-brace tag):  include sim.html module="pole" params="rampOn=0&rdOn=1" caption="..."
+  module: pole | tune | cf | rpc | vsc | py
+  params: press the "</>" (embed) button in the Controller Lab — it copies the complete include line.
+{%- endcomment -%}
+{%- assign mod = include.module | default: "pole" -%}
+{%- assign lab = "/hvdc-controls.html" | relative_url -%}
+{%- if include.params -%}{%- assign hash = "#m=" | append: mod | append: "&" | append: include.params -%}{%- else -%}{%- assign hash = "#m=" | append: mod -%}{%- endif -%}
+<figure class="gp-sim not-prose my-8">
+  <iframe src="{{ lab }}?embed={{ mod }}{{ hash }}" title="{{ include.caption | default: 'Interactive HVDC simulator' | escape }}" loading="lazy" style="width:100%;height:{{ include.height | default: 1100 }}px;border:0;border-radius:16px;"></iframe>
+  <figcaption style="display:flex;justify-content:space-between;gap:.75rem;font-size:.75rem;margin-top:.4rem;opacity:.8;">
+    <span>{{ include.caption | default: "Interactive — drag the sliders. Runs entirely in your browser." }}</span>
+    <a href="{{ lab }}{{ hash }}" target="_blank" rel="noopener">Open full screen ↗</a>
+  </figcaption>
+</figure>

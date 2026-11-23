@@ -44,3 +44,4 @@ defaults:
 exclude:
   - PUBLISHING.md
   - README.md
+  - pandapower-hvdc/     # Python studies: kept in the repo, not built into the site
